@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="description" content="TOTAL LAB Việt Nam – Phần mềm thử tra cứu phòng thí nghiệm, yêu cầu, bản đồ, báo giá. Tác giả: TS. Nguyễn Huy Cường và nhóm nghiên cứu.">
+    <meta name="theme-color" content="#0b5e8a">
+    <title>TOTAL LAB Việt Nam – Phần mềm thử · TS. Nguyễn Huy Cường và nhóm nghiên cứu</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <style>
+    #labMap{height:420px;width:100%;border-radius:12px;border:1px solid var(--border);z-index:1}
+    .map-toolbar{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-bottom:.8rem}
+    .dist-badge{display:inline-block;background:var(--accent);color:#fff;padding:.15rem .5rem;border-radius:12px;font-size:.75rem;font-weight:600}
+    .leaflet-popup-content{font-size:.85rem;line-height:1.45;margin:.6rem .8rem}
+        :root{--primary:#0b5e8a;--primary-light:#e8f2f9;--accent:#1b9aaa;--bg:#f7f9fc;--card:#fff;--text:#1e2a3a;--muted:#6b7a8f;--border:#dce3ec;--shadow:0 4px 16px rgba(11,94,138,.08);--success:#1e7e34;--warning:#b45f06;--danger:#c0392b}
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+        header{background:linear-gradient(135deg,#0b5e8a 0%,#1b9aaa 100%);color:#fff;padding:1.8rem 1.5rem 1.2rem;text-align:center}
+        header h1{font-size:1.8rem;font-weight:700;margin-bottom:.3rem}
+        header p{opacity:.92;max-width:820px;margin:0 auto .8rem;font-size:.95rem}
+        .stats{display:flex;justify-content:center;gap:1rem;flex-wrap:wrap}
+        .stat{background:rgba(255,255,255,.15);border-radius:30px;padding:.3rem .9rem;font-size:.85rem;backdrop-filter:blur(4px)}
+        .stat strong{font-weight:700}
+        main{max-width:1300px;margin:0 auto;padding:1rem 1rem 2rem}
+        .tabs{display:flex;gap:.5rem;margin-bottom:1rem;border-bottom:2px solid var(--border);padding-bottom:.5rem;flex-wrap:wrap}
+        .tab-btn{padding:.6rem 1.2rem;border:none;background:transparent;font-size:.95rem;font-weight:600;color:var(--muted);cursor:pointer;border-radius:8px 8px 0 0;transition:all .2s}
+        .tab-btn:hover{background:var(--primary-light);color:var(--primary)}
+        .tab-btn.active{background:var(--primary);color:#fff}
+        .tab-content{display:none}
+        .tab-content.active{display:block}
+        .toolbar{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:.8rem 1rem;margin-bottom:1rem;display:flex;flex-wrap:wrap;gap:.6rem;align-items:center}
+        .search-box{flex:2 1 250px}
+        .search-box input{width:100%;padding:.6rem 1rem .6rem 2.2rem;border:1.5px solid var(--border);border-radius:10px;font-size:.9rem;background:#fafcff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%236b7a8f" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>') no-repeat .7rem center}
+        .search-box input:focus{outline:none;border-color:var(--accent)}
+        select{padding:.6rem .8rem;border:1.5px solid var(--border);border-radius:10px;font-size:.85rem;background:#fafcff;color:var(--text);cursor:pointer}
+        .btn{padding:.6rem 1rem;border:none;border-radius:10px;font-weight:600;font-size:.85rem;cursor:pointer;transition:background .2s}
+        .btn-primary{background:var(--primary);color:#fff}
+        .btn-primary:hover{background:#094a6b}
+        .btn-outline{background:var(--primary-light);color:var(--primary)}
+        .btn-outline:hover{background:#d4e6f2}
+        .btn-success{background:var(--success);color:#fff}
+        .btn-success:hover{background:#155d27}
+        .btn-warning{background:var(--warning);color:#fff}
+        .btn-warning:hover{background:#8f4a04}
+        .btn-danger{background:var(--danger);color:#fff}
+        .btn-danger:hover{background:#a93226}
+        .btn-large{padding:.9rem 1.5rem;font-size:1rem;border-radius:12px;box-shadow:0 4px 12px rgba(11,94,138,.2)}
+        .result-meta{font-size:.88rem;color:var(--muted);margin-bottom:.8rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap}
+        .result-meta strong{color:var(--primary)}
+        .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:.8rem}
+        .lab-card{background:var(--card);border-radius:12px;box-shadow:var(--shadow);padding:.9rem 1rem .8rem;border:1px solid var(--border);display:flex;flex-direction:column;transition:transform .15s,box-shadow .2s;cursor:pointer;position:relative}
+        .lab-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(11,94,138,.14)}
+        .lab-card .tag-row{display:flex;gap:.3rem;flex-wrap:wrap;margin-bottom:.4rem}
+        .tag{font-size:.68rem;font-weight:600;padding:.15rem .5rem;border-radius:20px;background:var(--primary-light);color:var(--primary);white-space:nowrap}
+        .tag.type-national{background:#fff1e0;color:#b45f06}
+        .tag.type-vnu{background:#e6f4ea;color:#1e7e34}
+        .tag.type-iso{background:#e8eaf6;color:#3949ab}
+        .tag.type-medical{background:#fce4ec;color:#c2185b}
+        .tag.type-las{background:#e0f2f1;color:#00695c}
+        .tag.status-active{background:#d4edda;color:#155724}
+        .tag.status-soon{background:#fff3cd;color:#856404}
+        .lab-card h3{font-size:.95rem;font-weight:700;color:var(--primary);margin-bottom:.2rem;line-height:1.35}
+        .lab-card .org{font-size:.8rem;color:var(--muted);margin-bottom:.3rem}
+        .lab-card .addr{font-size:.78rem;color:var(--muted);display:flex;gap:.3rem;margin-top:auto;padding-top:.4rem;border-top:1px dashed var(--border)}
+        .lab-card .field-badge{position:absolute;top:.6rem;right:.6rem;font-size:.65rem;background:var(--accent);color:#fff;padding:.1rem .5rem;border-radius:10px;font-weight:600;opacity:.9}
+        .empty-state{text-align:center;padding:2rem 1rem;color:var(--muted);background:var(--card);border-radius:12px;border:1px dashed var(--border)}
+        .modal-overlay{display:none;position:fixed;inset:0;background:rgba(15,30,45,.5);backdrop-filter:blur(3px);z-index:1000;justify-content:center;align-items:center;padding:1rem}
+        .modal-overlay.active{display:flex}
+        .modal{background:var(--card);border-radius:16px;max-width:740px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:slideUp .2s ease}
+        @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+        .modal-header{background:linear-gradient(135deg,#0b5e8a,#1b9aaa);color:#fff;padding:1.2rem 1.4rem .9rem;border-radius:16px 16px 0 0;position:relative}
+        .modal-header h2{font-size:1.1rem;line-height:1.4;padding-right:2rem}
+        .modal-close{position:absolute;top:.9rem;right:.9rem;background:rgba(255,255,255,.2);border:none;color:#fff;width:28px;height:28px;border-radius:50%;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+        .modal-close:hover{background:rgba(255,255,255,.35)}
+        .modal-body{padding:1.2rem 1.4rem 1.4rem}
+        .detail-row{display:flex;padding:.5rem 0;border-bottom:1px solid var(--border);font-size:.9rem}
+        .detail-row:last-child{border-bottom:none}
+        .detail-label{flex:0 0 140px;font-weight:600;color:var(--primary)}
+        .detail-value{flex:1;color:var(--text);word-break:break-word}
+        .detail-value a{color:var(--accent);text-decoration:none}
+        .detail-desc{background:var(--primary-light);border-radius:10px;padding:.8rem 1rem;margin-top:.6rem;font-size:.9rem;color:#24425c}
+        .update-panel{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:1.2rem;margin-bottom:1rem}
+        .update-panel h2{font-size:1.2rem;color:var(--primary);margin-bottom:.5rem}
+        .update-panel p{font-size:.9rem;color:var(--muted);margin-bottom:1rem}
+        .log-area{background:#1e2a3a;color:#a8d8f0;border-radius:10px;padding:1rem;font-family:'Courier New',monospace;font-size:.78rem;max-height:320px;overflow-y:auto;margin-top:1rem;white-space:pre-wrap}
+        .log-area .log-success{color:#6fcf97}
+        .log-area .log-warn{color:#f2c94c}
+        .log-area .log-error{color:#eb5757}
+        .progress-bar-container{width:100%;height:8px;background:var(--border);border-radius:4px;margin:.5rem 0;overflow:hidden}
+        .progress-bar{height:100%;background:var(--accent);border-radius:4px;transition:width .3s ease;width:0%}
+        footer.app-footer{text-align:center;padding:1.2rem 1rem max(2rem,env(safe-area-inset-bottom));font-size:.8rem;color:var(--muted)}
+    footer.app-footer a{color:var(--primary)}
+    .auth-bar{display:flex;justify-content:flex-end;align-items:center;gap:.5rem;flex-wrap:wrap;max-width:1100px;margin:0 auto .6rem;padding:0 .5rem;font-size:.85rem}
+    .auth-bar .auth-user{background:rgba(255,255,255,.18);padding:.25rem .7rem;border-radius:20px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .auth-bar button{cursor:pointer;border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.12);color:#fff;padding:.4rem .75rem;border-radius:8px;font-size:.82rem;min-height:40px;touch-action:manipulation}
+    .auth-bar button:hover{background:rgba(255,255,255,.25)}
+    .auth-modal-box{background:#fff;color:var(--text);border-radius:14px;max-width:400px;width:100%;padding:1.3rem 1.4rem;box-shadow:var(--shadow);max-height:min(90vh,640px);overflow-y:auto;-webkit-overflow-scrolling:touch}
+    .auth-modal-box h3{color:var(--primary);margin-bottom:.8rem}
+    .auth-modal-box label{display:block;font-size:.82rem;font-weight:600;margin:.5rem 0 .2rem}
+    .auth-modal-box input,.auth-modal-box select{width:100%;padding:.55rem .7rem;border:1.5px solid var(--border);border-radius:8px;font-size:16px}
+    .auth-modal-box .auth-actions{display:flex;gap:.5rem;margin-top:1rem;flex-wrap:wrap}
+    .auth-hint{font-size:.78rem;color:var(--muted);margin-top:.6rem;line-height:1.45}
+    .auth-gate-note{background:#fff3cd;border:1px solid #f0d78c;color:#5a3a10;padding:.6rem .8rem;border-radius:8px;font-size:.85rem;margin:.6rem 0}
+    .tabs{display:flex;gap:.4rem;margin-bottom:1rem;border-bottom:2px solid var(--border);padding-bottom:.5rem;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;overscroll-behavior-x:contain}
+    .tabs .tab-btn{flex:0 0 auto;white-space:nowrap;min-height:42px;touch-action:manipulation}
+    .btn,.tab-btn,button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+    .btn{min-height:42px}
+    input,select,textarea{font-size:16px;max-width:100%}
+    .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%}
+    main{padding-left:max(1rem,env(safe-area-inset-left));padding-right:max(1rem,env(safe-area-inset-right))}
+    header{padding-top:max(1.2rem,env(safe-area-inset-top))}
+
+    /* Tablet */
+    @media(max-width:900px){
+      .card-grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+      #labMap{height:360px}
+    }
+    /* Mobile */
+    @media(max-width:640px){
+      header{padding:1rem .9rem .9rem;text-align:left}
+      header h1{font-size:1.25rem;line-height:1.3}
+      header p{font-size:.82rem;margin-left:0;text-align:left}
+      .stats{justify-content:flex-start;gap:.45rem}
+      .stat{font-size:.75rem;padding:.25rem .65rem}
+      .auth-bar{justify-content:flex-start;margin-bottom:.5rem}
+      .toolbar{flex-direction:column;align-items:stretch;padding:.7rem}
+      .toolbar .search-box{min-width:0;width:100%}
+      .toolbar select,.toolbar input,.toolbar .btn{width:100%}
+      select{width:100%}
+      .card-grid{grid-template-columns:1fr;gap:.65rem}
+      .lab-card{padding:.85rem}
+      .detail-row{flex-direction:column;gap:.15rem}
+      .detail-label{flex:none;font-size:.8rem}
+      .detail-value{font-size:.9rem;word-break:break-word}
+      .modal{max-height:92vh;border-radius:12px 12px 0 0;margin-top:auto}
+      .modal-overlay{align-items:flex-end;padding:0}
+      #labMap{height:280px;border-radius:10px}
+      .map-toolbar{flex-direction:column;align-items:stretch}
+      .map-toolbar select,.map-toolbar .btn,.map-toolbar button{width:100%}
+      #tab-request .update-panel>div[style*="grid"]{grid-template-columns:1fr!important}
+      .update-panel{padding:.9rem}
+      .update-panel h2{font-size:1.05rem}
+      .btn-large{width:100%}
+      .result-meta{flex-direction:column;align-items:flex-start;gap:.35rem;font-size:.8rem}
+      #svcTable{font-size:.78rem}
+      #svcTable th,#svcTable td{padding:.45rem .4rem}
+      .auth-modal-box{max-width:100%;border-radius:12px 12px 0 0;margin-top:auto}
+      #authModalOverlay.modal-overlay{align-items:flex-end;padding:0}
+      table{font-size:.82rem}
+    }
+    @media(max-width:380px){
+      header h1{font-size:1.1rem}
+      .tab-btn{padding:.4rem .55rem;font-size:.78rem}
+      #labMap{height:240px}
+    }
+    @media print{
+      header,.tabs,.map-toolbar,#labMap,.btn,footer.app-footer,.auth-bar{display:none!important}
+      .tab-content{display:none!important}
+      #tab-quote.tab-content.active,#tab-quote{display:block!important}
+      body{background:#fff}
+    }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="auth-bar" id="authBar">
+        <span class="auth-user" id="authUserLabel">Khách</span>
+        <button type="button" id="btnLogin">Đăng nhập</button>
+        <button type="button" id="btnRegister">Đăng ký</button>
+        <button type="button" id="btnLogout" style="display:none;">Đăng xuất</button>
+    </div>
+    <h1>🔬 TOTAL LAB Việt Nam</h1>
+    <p>Phần mềm thử · Tra cứu lab · Bản đồ · Báo giá tham khảo · Quy trình · Xác thực người dùng · Tác giả: TS. Nguyễn Huy Cường và nhóm nghiên cứu.</p>
+    <div class="stats" id="headerStats"></div>
+</header>
+
+<!-- Auth modal -->
+<div class="modal-overlay" id="authModalOverlay">
+  <div class="auth-modal-box" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
+    <h3 id="authModalTitle">Đăng nhập</h3>
+    <div id="authFormLogin">
+      <label for="authEmail">Email</label>
+      <input id="authEmail" type="email" autocomplete="username" placeholder="email@domain.com">
+      <label for="authPass">Mật khẩu</label>
+      <input id="authPass" type="password" autocomplete="current-password" placeholder="••••••••">
+      <div class="auth-actions">
+        <button class="btn btn-primary" type="button" id="authDoLogin">Đăng nhập</button>
+        <button class="btn btn-outline" type="button" id="authSwitchReg">Tạo tài khoản</button>
+        <button class="btn btn-outline" type="button" id="authCancel">Đóng</button>
+      </div>
+      <p class="auth-hint">Demo: <code>user@total.lab</code> / <code>User@123</code> · <code>admin@total.lab</code> / <code>Admin@123</code> · <code>lab@total.lab</code> / <code>Lab@123</code></p>
+    </div>
+    <div id="authFormReg" style="display:none;">
+      <label for="regName">Họ tên</label>
+      <input id="regName" type="text" placeholder="Nguyễn Văn A">
+      <label for="regEmail">Email</label>
+      <input id="regEmail" type="email" placeholder="email@domain.com">
+      <label for="regPass">Mật khẩu (≥ 6 ký tự)</label>
+      <input id="regPass" type="password" autocomplete="new-password">
+      <label for="regRole">Vai trò</label>
+      <select id="regRole">
+        <option value="user">Khách hàng / Doanh nghiệp</option>
+        <option value="lab">Đơn vị phòng thí nghiệm</option>
+      </select>
+      <div class="auth-actions">
+        <button class="btn btn-success" type="button" id="authDoReg">Đăng ký</button>
+        <button class="btn btn-outline" type="button" id="authSwitchLogin">Có tài khoản?</button>
+        <button class="btn btn-outline" type="button" id="authCancel2">Đóng</button>
+      </div>
+      <p class="auth-hint">Tài khoản lưu trên trình duyệt (localStorage). Không phải hệ thống xác thực máy chủ.</p>
+    </div>
+    <p id="authError" style="color:var(--danger);font-size:.85rem;margin-top:.5rem;display:none;"></p>
+  </div>
+</div>
+
+<main>
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="guide">📖 Giới thiệu & Hướng dẫn</button>
+        <button class="tab-btn" data-tab="request">📝 Gửi yêu cầu</button>
+        <button class="tab-btn" data-tab="map">🗺️ Bản đồ & Khoảng cách</button>
+        <button class="tab-btn" data-tab="quote">💰 Báo giá tự động</button>
+        <button class="tab-btn" data-tab="process">📑 Quy trình dịch vụ</button>
+        <button class="tab-btn" data-tab="results">📄 Tra cứu kết quả</button>
+        <button class="tab-btn" data-tab="search">🔍 Tra cứu Lab</button>
+        <button class="tab-btn" data-tab="services">📋 Dịch vụ & Đơn giá</button>
+    </div>
+
+    <!-- ===== TAB: GIỚI THIỆU & HƯỚNG DẪN ===== -->
+    <div id="tab-guide" class="tab-content active">
+        <div class="update-panel">
+            <h2>📖 TOTAL LAB Việt Nam – Giới thiệu</h2>
+            <p><strong>TOTAL LAB</strong> là <strong>phần mềm thử</strong> hỗ trợ tra cứu phòng thí nghiệm, gửi yêu cầu, ước khoảng cách, báo giá tham khảo và xem quy trình dịch vụ. Dữ liệu lab / dịch vụ minh họa được biên soạn từ các nguồn công khai về hệ thống công nhận và đơn giá thị trường.</p>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.8rem;margin:1rem 0;">
+                <div style="background:var(--primary-light);padding:.9rem;border-radius:10px;"><strong>🎯 Mục tiêu</strong><br><span style="font-size:.88rem;">Hỗ trợ doanh nghiệp, chủ đầu tư, nhà thầu định hướng lab phù hợp, ước giá và nắm quy trình.</span></div>
+                <div style="background:var(--primary-light);padding:.9rem;border-radius:10px;"><strong>📦 Phiên bản</strong><br><span style="font-size:.88rem;">Phần mềm thử v1.2 · 11/2026</span></div>
+                <div style="background:var(--primary-light);padding:.9rem;border-radius:10px;"><strong>👤 Tác giả</strong><br><span style="font-size:.88rem;">TS. Nguyễn Huy Cường và nhóm nghiên cứu</span></div>
+            </div>
+
+            <h2 style="margin-top:1.2rem;font-size:1.15rem;">⚖️ Cơ sở pháp lý & hệ thống lab (tham chiếu)</h2>
+            <ul style="margin:.5rem 0 1rem 1.2rem;font-size:.9rem;line-height:1.65;">
+                <li><strong>ISO/IEC 17025</strong> – Năng lực phòng thử nghiệm và hiệu chuẩn; công nhận quốc gia qua <strong>BoA</strong> (Văn phòng Công nhận chất lượng), mã <strong>VILAS</strong>.</li>
+                <li><strong>ISO 15189</strong> – Phòng xét nghiệm y tế (chất lượng và năng lực).</li>
+                <li><strong>LAS-XD</strong> – Phòng thí nghiệm chuyên ngành xây dựng được Sở Xây dựng / cơ quan có thẩm quyền công nhận theo quy định ngành Xây dựng.</li>
+                <li><strong>Định mức, đơn giá thí nghiệm xây dựng</strong> – tham chiếu Thông tư/định mức Bộ Xây dựng (ví dụ TT liên quan định mức thí nghiệm chuyên ngành) và báo giá lab công bố công khai.</li>
+                <li><strong>Quan trắc môi trường / ATVSTP</strong> – quy chuẩn kỹ thuật, TCVN và yêu cầu lab được công nhận khi pháp luật bắt buộc.</li>
+            </ul>
+            <p style="font-size:.88rem;color:var(--muted);">Danh mục lab trong phần mềm là <strong>ví dụ / minh họa</strong> (VIBM, lab đại học, lab LAS-XD/VILAS, lab môi trường – thực phẩm – y tế…), không thay thế danh sách công nhận chính thức trên cổng BoA và cơ quan chuyên ngành.</p>
+
+            <h2 style="margin-top:1.4rem;font-size:1.15rem;">🚀 Hướng dẫn sử dụng nhanh</h2>
+            <ol style="margin:.6rem 0 1rem 1.2rem;font-size:.92rem;line-height:1.7;">
+                <li><strong>Gửi yêu cầu</strong> — Điền khu vực, lĩnh vực, mô tả chỉ tiêu → hệ thống gợi ý lab (gần / nhanh / ISO) kèm khoảng cách ước lượng.</li>
+                <li><strong>Bản đồ</strong> — Chọn tỉnh hoặc GPS → xem marker lab → <em>Chỉ đường</em> (OSRM) hoặc chọn lab chuyển sang báo giá.</li>
+                <li><strong>Báo giá tự động</strong> — Chọn dịch vụ + số lượng → cộng khoảng giá thấp–cao (chưa VAT) → Lưu mã / In.</li>
+                <li><strong>Quy trình</strong> — Xem các bước tiêu chuẩn theo nhóm dịch vụ (từ tiếp nhận đến trả kết quả).</li>
+                <li><strong>Tra cứu kết quả</strong> — Nhập mã <code>TL-…</code> đã tạo trên <em>cùng trình duyệt</em> để xem lại yêu cầu/báo giá.</li>
+                <li><strong>Tra cứu Lab / Đơn giá</strong> — Lọc, tìm kiếm danh mục lab và bảng dịch vụ tham khảo.</li>
+            </ol>
+
+            <h2 style="margin-top:1.2rem;font-size:1.15rem;">✅ Điều kiện triển khai</h2>
+            <ul style="margin:.5rem 0 1rem 1.2rem;font-size:.9rem;line-height:1.65;">
+                <li>Mở file bằng trình duyệt hiện đại (Chrome, Edge, Firefox, Safari).</li>
+                <li><strong>Bản đồ & chỉ đường</strong> cần kết nối mạng (Leaflet OSM + OSRM).</li>
+                <li>Có thể đặt file trên web tĩnh (Nginx, GitHub Pages, S3…) hoặc gửi file HTML trực tiếp.</li>
+                <li>Yêu cầu/báo giá lưu trong <strong>localStorage</strong> của trình duyệt người dùng (không đồng bộ máy chủ).</li>
+                <li>GPS chỉ hoạt động trên HTTPS hoặc localhost (tùy chính sách trình duyệt).</li>
+            </ul>
+
+            <h2 style="margin-top:1.2rem;font-size:1.15rem;">⚠️ Giới hạn & lưu ý pháp lý</h2>
+            <ul style="margin:.5rem 0 1rem 1.2rem;font-size:.9rem;line-height:1.65;color:#5a3a10;">
+                <li>Đây là <strong>prototype / công cụ hỗ trợ</strong>, chưa kết nối API đặt hàng hay trả kết quả thật từ lab.</li>
+                <li>Đơn giá là <strong>tham khảo thị trường</strong>, không phải báo giá chính thức. Giá thực tế do lab xác nhận.</li>
+                <li>Tọa độ lab trên bản đồ là <strong>ước lượng theo khu vực</strong>, chưa geocode từng địa chỉ.</li>
+                <li>Thông tin công nhận (VILAS / LAS-XD) nên đối chiếu trên cổng <a href="https://boa.gov.vn" target="_blank" rel="noopener">boa.gov.vn</a> và cơ quan quản lý chuyên ngành (Sở Xây dựng, Bộ Xây dựng…).</li>
+                <li>Không thu thập dữ liệu cá nhân lên máy chủ; dữ liệu form lưu trên trình duyệt người dùng.</li>
+                <li><strong>Xác thực thử nghiệm:</strong> băm SHA-256, tài khoản local — chỉ phục vụ bản thử, chưa thay thế hệ thống xác thực chính thức.</li>
+            </ul>
+            <h2 style="margin-top:1.2rem;font-size:1.15rem;">🔐 Tài khoản demo</h2>
+            <ul style="margin:.5rem 0 1rem 1.2rem;font-size:.9rem;line-height:1.65;">
+                <li><code>user@total.lab</code> / <code>User@123</code> — Khách hàng</li>
+                <li><code>lab@total.lab</code> / <code>Lab@123</code> — Đơn vị lab</li>
+                <li><code>admin@total.lab</code> / <code>Admin@123</code> — Quản trị</li>
+            </ul>
+
+            <h2 style="margin-top:1.2rem;font-size:1.15rem;">🛠️ Lộ trình nâng cấp (khi có backend)</h2>
+            <p style="font-size:.9rem;">Tài khoản lab · API tiếp nhận mẫu · Đồng bộ kết quả · Geocode địa chỉ thật · Thanh toán · Phân quyền quản trị. Phiên bản hiện tại đã sẵn sàng demo, đào tạo nội bộ và triển khai tĩnh.</p>
+            <div style="margin-top:1.2rem;display:flex;flex-wrap:wrap;gap:.5rem;">
+                <button class="btn btn-primary" type="button" onclick="document.querySelector('[data-tab=request]').click()">Bắt đầu: Gửi yêu cầu →</button>
+                <button class="btn btn-outline" type="button" onclick="document.querySelector('[data-tab=map]').click()">Xem bản đồ</button>
+                <button class="btn btn-outline" type="button" onclick="document.querySelector('[data-tab=search]').click()">Tra cứu Lab</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TAB: GỬI YÊU CẦU ===== -->
+    <div id="tab-request" class="tab-content">
+        <div class="update-panel">
+            <h2>📝 Tiếp nhận yêu cầu thí nghiệm – TOTAL LAB</h2>
+            <p>Điền thông tin bên dưới. Hệ thống sẽ gợi ý <strong>lab phù hợp (gần · đúng lĩnh vực · đang hoạt động)</strong> và chuyển sang báo giá tự động.</p>
+            <div class="auth-gate-note" data-auth-gate>🔒 Cần <strong>đăng nhập</strong> để gửi yêu cầu và lưu báo giá. Tra cứu lab / bản đồ / đơn giá xem được khi chưa đăng nhập.</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
+                <div>
+                    <label style="font-weight:600;font-size:.85rem;color:var(--primary)">Họ tên / Tổ chức *</label>
+                    <input id="reqName" type="text" placeholder="Công ty / Cá nhân" style="width:100%;padding:.55rem .8rem;border:1.5px solid var(--border);border-radius:8px;margin-top:.25rem;">
+                </div>
+                <div>
+                    <label style="font-weight:600;font-size:.85rem;color:var(--primary)">Điện thoại / Email *</label>
+                    <input id="reqContact" type="text" placeholder="090... hoặc email@" style="width:100%;padding:.55rem .8rem;border:1.5px solid var(--border);border-radius:8px;margin-top:.25rem;">
+                </div>
+                <div>
+                    <label style="font-weight:600;font-size:.85rem;color:var(--primary)">Khu vực / Tỉnh thành *</label>
+                    <select id="reqRegion" style="width:100%;padding:.55rem .8rem;border:1.5px solid var(--border);border-radius:8px;margin-top:.25rem;">
+                        <option value="">-- Chọn khu vực --</option>
+                        <option value="Hà Nội">Hà Nội</option>
+                        <option value="TP.HCM">TP.HCM</option>
+                        <option value="Đà Nẵng">Đà Nẵng</option>
+                        <option value="Cần Thơ">Cần Thơ</option>
+                        <option value="Miền Bắc">Miền Bắc</option>
+                        <option value="Miền Trung">Miền Trung</option>
+                        <option value="Miền Nam">Miền Nam</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-weight:600;font-size:.85rem;color:var(--primary)">Lĩnh vực *</label>
+                    <select id="reqField" style="width:100%;padding:.55rem .8rem;border:1.5px solid var(--border);border-radius:8px;margin-top:.25rem;">
+                        <option value="">-- Chọn lĩnh vực --</option>
+                        <option value="Vật liệu xây dựng">Vật liệu xây dựng</option>
+                        <option value="Môi trường">Môi trường</option>
+                        <option value="Nông nghiệp & Thực phẩm">Nông nghiệp & Thực phẩm</option>
+                        <option value="Y tế & Xét nghiệm">Y tế & Xét nghiệm</option>
+                        <option value="Vật liệu & Nano">Vật liệu & Nano</option>
+                        <option value="Hóa học & Sinh học">Hóa học & Sinh học</option>
+                        <option value="Cơ khí & Tự động hóa">Cơ khí & Tự động hóa</option>
+                        <option value="Năng lượng">Năng lượng</option>
+                    </select>
+                </div>
+            </div>
+            <div style="margin-top:1rem;">
+                <label style="font-weight:600;font-size:.85rem;color:var(--primary)">Mô tả yêu cầu / Chỉ tiêu cần thí nghiệm</label>
+                <textarea id="reqDesc" rows="3" placeholder="VD: Thí nghiệm cường độ nén bê tông 15x15, 3 tổ mẫu; hoặc COD nước thải 5 mẫu..." style="width:100%;padding:.55rem .8rem;border:1.5px solid var(--border);border-radius:8px;margin-top:.25rem;font-family:inherit;"></textarea>
+            </div>
+            <div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;">
+                <label style="font-weight:600;font-size:.85rem;">Ưu tiên:</label>
+                <label><input type="radio" name="reqPriority" value="near" checked> Gần nhất</label>
+                <label><input type="radio" name="reqPriority" value="fast"> Nhanh / Sẵn sàng</label>
+                <label><input type="radio" name="reqPriority" value="price"> Giá tham khảo thấp</label>
+                <label><input type="radio" name="reqPriority" value="iso"> Ưu tiên ISO/VILAS</label>
+            </div>
+            <div style="margin-top:1.2rem;">
+                <button class="btn btn-success btn-large" id="reqSubmitBtn">🚀 Gửi yêu cầu & Gợi ý Lab</button>
+                <button class="btn btn-outline" id="reqClearBtn" style="margin-left:.5rem;">Xóa form</button>
+            </div>
+            <div id="reqMatchResult" style="margin-top:1.2rem;display:none;"></div>
+        </div>
+    </div>
+
+    <!-- ===== TAB: BẢN ĐỒ & KHOẢNG CÁCH ===== -->
+    <div id="tab-map" class="tab-content">
+        <div class="update-panel">
+            <h2>🗺️ Bản đồ phòng thí nghiệm & khoảng cách</h2>
+            <p>Chọn vị trí của bạn (tỉnh/thành hoặc GPS) để xem lab gần nhất. Tọa độ lab là <strong>ước lượng theo khu vực</strong> (chưa geocode từng địa chỉ). Khoảng cách dùng công thức Haversine.</p>
+            <div class="map-toolbar">
+                <label style="font-weight:600;font-size:.85rem;">Vị trí của bạn:</label>
+                <select id="mapUserRegion" style="padding:.45rem .7rem;border-radius:8px;border:1.5px solid var(--border);">
+                    <option value="Hà Nội">Hà Nội</option>
+                    <option value="TP.HCM">TP.HCM</option>
+                    <option value="Đà Nẵng">Đà Nẵng</option>
+                    <option value="Cần Thơ">Cần Thơ</option>
+                    <option value="Miền Bắc">Miền Bắc (ước lượng)</option>
+                    <option value="Miền Trung">Miền Trung</option>
+                    <option value="Miền Nam">Miền Nam</option>
+                </select>
+                <button class="btn btn-outline" id="mapGpsBtn" type="button">📍 Dùng GPS trình duyệt</button>
+                <select id="mapFieldFilter" style="padding:.45rem .7rem;border-radius:8px;border:1.5px solid var(--border);">
+                    <option value="">Tất cả lĩnh vực</option>
+                </select>
+                <button class="btn btn-primary" id="mapRefreshBtn" type="button">Cập nhật bản đồ</button>
+            </div>
+            <div id="mapUserCoord" style="font-size:.82rem;color:var(--muted);margin-bottom:.5rem;">Tọa độ tham chiếu: —</div>
+            <div id="mapRouteInfo" style="font-size:.88rem;margin-bottom:.5rem;min-height:1.2em;"></div>
+            <div id="labMap"></div>
+            <div style="margin-top:1rem;">
+                <h3 style="font-size:1rem;color:var(--primary);margin-bottom:.5rem;">Lab gần nhất (ước lượng)</h3>
+                <div id="mapNearList" style="font-size:.88rem;max-height:280px;overflow-y:auto;"></div>
+            </div>
+            <p style="font-size:.78rem;color:var(--muted);margin-top:.8rem;">Nguồn bản đồ: OpenStreetMap · Leaflet. Chỉ đường: OSRM (driving). Tọa độ lab ước lượng theo khu vực — tuyến đường mang tính tham khảo.</p>
+        </div>
+    </div>
+
+    <!-- ===== TAB: BÁO GIÁ TỰ ĐỘNG ===== -->
+    <div id="tab-quote" class="tab-content">
+        <div class="update-panel">
+            <h2>💰 Báo giá tự động TOTAL LAB</h2>
+            <p>Chọn dịch vụ từ danh mục → hệ thống tính khoảng giá tham khảo (chưa VAT). Có thể gắn lab đã chọn từ tab Yêu cầu.</p>
+            <div style="display:flex;flex-wrap:wrap;gap:.6rem;margin:1rem 0;align-items:center;">
+                <select id="quoteGroup" style="padding:.5rem .8rem;border-radius:8px;border:1.5px solid var(--border);min-width:180px;"><option value="">Tất cả nhóm</option></select>
+                <select id="quoteSvc" style="padding:.5rem .8rem;border-radius:8px;border:1.5px solid var(--border);min-width:280px;flex:1;"><option value="">-- Chọn dịch vụ --</option></select>
+                <input id="quoteQty" type="number" min="1" value="1" style="width:80px;padding:.5rem;border-radius:8px;border:1.5px solid var(--border);" title="Số lượng">
+                <button class="btn btn-primary" id="quoteAddBtn">+ Thêm vào báo giá</button>
+            </div>
+            <div id="quoteLabInfo" style="font-size:.88rem;color:var(--muted);margin-bottom:.8rem;"></div>
+            <div class="table-scroll"><table style="width:100%;min-width:520px;border-collapse:collapse;font-size:.88rem;background:#fff;border-radius:10px;overflow:hidden;box-shadow:var(--shadow);">
+                <thead><tr style="background:var(--primary);color:#fff;">
+                    <th style="padding:.6rem;">Dịch vụ</th><th style="padding:.6rem;">SL</th><th style="padding:.6rem;text-align:right;">Đơn giá thấp</th><th style="padding:.6rem;text-align:right;">Đơn giá cao</th><th style="padding:.6rem;text-align:right;">Thành tiền (khoảng)</th><th style="padding:.6rem;"></th>
+                </tr></thead>
+                <tbody id="quoteBody"></tbody>
+                <tfoot>
+                    <tr style="font-weight:700;background:var(--primary-light);">
+                        <td style="padding:.7rem;" colspan="2">Tổng tham khảo (chưa VAT)</td>
+                        <td style="padding:.7rem;text-align:right;" id="quoteSumLow">0</td>
+                        <td style="padding:.7rem;text-align:right;" id="quoteSumHigh">0</td>
+                        <td style="padding:.7rem;text-align:right;" id="quoteSumRange">—</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table></div>
+            <div style="margin-top:1rem;display:flex;gap:.5rem;flex-wrap:wrap;">
+                <button class="btn btn-success" id="quoteSaveBtn">💾 Lưu báo giá (local)</button>
+                <button class="btn btn-outline" id="quotePrintBtn">🖨️ In / Xuất</button>
+                <button class="btn btn-danger" id="quoteClearBtn">Xóa bảng</button>
+            </div>
+            <p style="font-size:.8rem;color:var(--warning);margin-top:.8rem;">⚠️ Báo giá tự động chỉ mang tính tham khảo. Giá chính thức do lab xác nhận sau khi nhận mẫu / khảo sát hiện trường.</p>
+        </div>
+    </div>
+
+    <!-- ===== TAB: QUY TRÌNH DỊCH VỤ ===== -->
+    <div id="tab-process" class="tab-content">
+        <div class="update-panel">
+            <h2>📑 Quy trình thực hiện dịch vụ thí nghiệm</h2>
+            <p>Chọn nhóm dịch vụ để xem trình tự các bước tiêu chuẩn (từ tiếp nhận đến trả kết quả).</p>
+            <select id="processGroup" style="padding:.55rem .9rem;border-radius:8px;border:1.5px solid var(--border);margin:1rem 0;min-width:260px;"></select>
+            <div id="processSteps" style="margin-top:.5rem;"></div>
+        </div>
+    </div>
+
+    <!-- ===== TAB: TRA CỨU KẾT QUẢ ===== -->
+    <div id="tab-results" class="tab-content">
+        <div class="update-panel">
+            <h2>📄 Tra cứu kết quả / Mã yêu cầu</h2>
+            <p>Nhập mã yêu cầu TOTAL LAB (đã lưu trên trình duyệt này) để xem trạng thái và báo giá đã tạo.</p>
+            <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin:1rem 0;">
+                <input id="resultCode" type="text" placeholder="VD: TL-20261114-XXXX" style="flex:1;min-width:200px;padding:.55rem .8rem;border:1.5px solid var(--border);border-radius:8px;">
+                <button class="btn btn-primary" id="resultSearchBtn">Tra cứu</button>
+            </div>
+            <div id="resultOut" style="margin-top:1rem;"></div>
+            <div style="margin-top:1.2rem;">
+                <h3 style="font-size:1rem;color:var(--primary);margin-bottom:.5rem;">Yêu cầu gần đây (máy này)</h3>
+                <div id="recentReqs" style="font-size:.88rem;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-search" class="tab-content">
+        <div class="toolbar">
+            <div class="search-box"><input type="text" id="searchInput" placeholder="Tìm theo tên, tổ chức, địa chỉ, nhãn…"></div>
+            <select id="fieldFilter"><option value="">Tất cả lĩnh vực</option></select>
+            <select id="regionFilter"><option value="">Tất cả khu vực</option></select>
+            <select id="typeFilter"><option value="">Tất cả loại hình</option></select>
+            <select id="tagFilter"><option value="">Tất cả nhãn</option></select>
+            <button class="btn btn-outline" id="resetBtn">↺ Đặt lại</button>
+        </div>
+        <div class="result-meta">
+            <span>Hiển thị <strong id="resultCount">0</strong> / <span id="totalCount">0</span> phòng thí nghiệm</span>
+            <span>Sắp xếp: <select id="sortSelect" style="min-width:auto;padding:.35rem .6rem;font-size:.85rem;"><option value="name">Tên A→Z</option><option value="name_desc">Tên Z→A</option><option value="region">Khu vực</option></select></span>
+        </div>
+        <div class="card-grid" id="cardGrid"></div>
+        <div class="empty-state" id="emptyState" style="display:none;"><h3>Không tìm thấy phòng thí nghiệm phù hợp</h3><p>Hãy thử thay đổi từ khóa hoặc bộ lọc.</p></div>
+    </div>
+
+    <div id="tab-services" class="tab-content">
+        <div class="toolbar">
+            <div class="search-box"><input type="text" id="svcSearch" placeholder="Tìm dịch vụ, chỉ tiêu, nhóm…"></div>
+            <select id="svcGroupFilter"><option value="">Tất cả nhóm dịch vụ</option></select>
+            <select id="svcSort"><option value="group">Theo nhóm</option><option value="price_asc">Giá thấp → cao</option><option value="price_desc">Giá cao → thấp</option><option value="name">Tên A→Z</option></select>
+            <button class="btn btn-outline" id="svcResetBtn">↺ Đặt lại</button>
+        </div>
+        <div class="result-meta">
+            <span>Hiển thị <strong id="svcCount">0</strong> / <span id="svcTotal">0</span> dịch vụ • Đơn giá <strong>tham khảo thị trường 2025–2026</strong> (VND, chưa VAT)</span>
+            <span style="font-size:.8rem;color:var(--warning)">⚠️ Giá thực tế có thể thay đổi theo đơn vị, số lượng mẫu, vị trí lấy mẫu. Liên hệ lab để báo giá chính thức.</span>
+        </div>
+        <div id="svcTableWrap" style="overflow-x:auto;background:var(--card);border-radius:12px;box-shadow:var(--shadow);">
+            <table id="svcTable" style="width:100%;border-collapse:collapse;font-size:.88rem;">
+                <thead>
+                    <tr style="background:var(--primary);color:#fff;">
+                        <th style="padding:.7rem .8rem;text-align:left;white-space:nowrap;">Nhóm</th>
+                        <th style="padding:.7rem .8rem;text-align:left;">Dịch vụ / Chỉ tiêu thí nghiệm</th>
+                        <th style="padding:.7rem .8rem;text-align:center;white-space:nowrap;">ĐVT</th>
+                        <th style="padding:.7rem .8rem;text-align:right;white-space:nowrap;">Đơn giá thấp</th>
+                        <th style="padding:.7rem .8rem;text-align:right;white-space:nowrap;">Đơn giá cao</th>
+                        <th style="padding:.7rem .8rem;text-align:left;">Ghi chú / Tiêu chuẩn</th>
+                        <th style="padding:.7rem .8rem;text-align:center;">Nhãn</th>
+                    </tr>
+                </thead>
+                <tbody id="svcBody"></tbody>
+            </table>
+        </div>
+        <div class="empty-state" id="svcEmpty" style="display:none;margin-top:1rem;"><h3>Không tìm thấy dịch vụ phù hợp</h3></div>
+        <div style="margin-top:1.2rem;padding:1rem;background:var(--primary-light);border-radius:12px;font-size:.88rem;color:#24425c;">
+            <strong>📌 Đơn giá ví dụ (tham khảo):</strong> tổng hợp từ báo giá lab VLXD, định mức thí nghiệm chuyên ngành (Bộ Xây dựng), quan trắc môi trường lao động, lab thực phẩm/VILAS, gói xét nghiệm y tế. <strong>Lĩnh vực:</strong> VLXD, Môi trường, Thực phẩm & Nông sản, Y tế, Vật liệu & Cơ khí, Năng lượng. Chưa VAT, chưa gồm lấy mẫu/vận chuyển. Giá chính thức do từng lab xác nhận.
+        </div>
+    </div>
+
+    </main>
+
+<div class="modal-overlay" id="modalOverlay"><div class="modal" id="modalContent"></div></div>
+
+<footer class="app-footer">
+    <div><strong>TOTAL LAB Việt Nam</strong> · Phần mềm thử v1.2 · 11/2026</div>
+    <div style="margin-top:.35rem;">Tác giả: <strong>TS. Nguyễn Huy Cường</strong> và nhóm nghiên cứu · Dữ liệu minh họa, không thay thế báo giá / chứng nhận chính thức</div>
+    <div style="margin-top:.25rem;">Tham chiếu: <a href="https://boa.gov.vn" target="_blank" rel="noopener">BoA (VILAS)</a> · <a href="https://moc.gov.vn" target="_blank" rel="noopener">Bộ Xây dựng</a> · <a href="https://www.vibm.vn" target="_blank" rel="noopener">VIBM</a></div>
+</footer>
+
+<script>
+const APP_VERSION='1.2-trial-20261114';
+/* ========== AUTH (client-side) ========== */
+const USERS_KEY='total_lab_users_v1';
+const SESSION_KEY='total_lab_session_v1';
+let currentUser=null;
+
+async function sha256(text){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function loadUsers(){
+  try{return JSON.parse(localStorage.getItem(USERS_KEY)||'[]')}catch(e){return[]}
+}
+function saveUsers(arr){localStorage.setItem(USERS_KEY,JSON.stringify(arr))}
+async function seedDemoUsers(){
+  let users=loadUsers();
+  const demos=[
+    {email:'user@total.lab',name:'Người dùng demo',role:'user',pass:'User@123'},
+    {email:'admin@total.lab',name:'Quản trị demo',role:'admin',pass:'Admin@123'},
+    {email:'lab@total.lab',name:'Lab demo',role:'lab',pass:'Lab@123'}
+  ];
+  for(const d of demos){
+    if(!users.find(u=>u.email===d.email)){
+      users.push({email:d.email,name:d.name,role:d.role,passHash:await sha256(d.pass),created:new Date().toISOString()});
+    }
+  }
+  saveUsers(users);
+}
+function getSession(){
+  try{return JSON.parse(sessionStorage.getItem(SESSION_KEY)||localStorage.getItem(SESSION_KEY)||'null')}catch(e){return null}
+}
+function setSession(user,remember){
+  const payload=user?{email:user.email,name:user.name,role:user.role,ts:Date.now()}:null;
+  if(!payload){
+    sessionStorage.removeItem(SESSION_KEY);localStorage.removeItem(SESSION_KEY);currentUser=null;
+  }else{
+    const s=JSON.stringify(payload);
+    sessionStorage.setItem(SESSION_KEY,s);
+    if(remember) localStorage.setItem(SESSION_KEY,s); else localStorage.removeItem(SESSION_KEY);
+    currentUser=payload;
+  }
+  renderAuthUI();
+}
+function isLoggedIn(){return !!(currentUser&&currentUser.email)}
+function requireAuth(actionLabel){
+  if(isLoggedIn()) return true;
+  alert('Vui lòng đăng nhập để '+actionLabel+'.\nTài khoản demo: user@total.lab / User@123');
+  openAuthModal('login');
+  return false;
+}
+function roleLabel(r){
+  return r==='admin'?'Quản trị':r==='lab'?'Phòng lab':r==='user'?'Khách hàng':'Khách';
+}
+function renderAuthUI(){
+  const label=document.getElementById('authUserLabel');
+  const btnL=document.getElementById('btnLogin');
+  const btnR=document.getElementById('btnRegister');
+  const btnO=document.getElementById('btnLogout');
+  if(!label)return;
+  if(isLoggedIn()){
+    label.textContent=currentUser.name+' · '+roleLabel(currentUser.role);
+    if(btnL)btnL.style.display='none';
+    if(btnR)btnR.style.display='none';
+    if(btnO)btnO.style.display='';
+  }else{
+    label.textContent='Khách (chưa đăng nhập)';
+    if(btnL)btnL.style.display='';
+    if(btnR)btnR.style.display='';
+    if(btnO)btnO.style.display='none';
+  }
+  document.querySelectorAll('[data-auth-gate]').forEach(el=>{
+    el.style.opacity=isLoggedIn()?'1':'0.95';
+  });
+}
+function openAuthModal(mode){
+  const ov=document.getElementById('authModalOverlay');
+  if(!ov)return;
+  ov.classList.add('active');
+  document.getElementById('authError').style.display='none';
+  if(mode==='reg'){
+    document.getElementById('authFormLogin').style.display='none';
+    document.getElementById('authFormReg').style.display='block';
+    document.getElementById('authModalTitle').textContent='Đăng ký tài khoản';
+  }else{
+    document.getElementById('authFormLogin').style.display='block';
+    document.getElementById('authFormReg').style.display='none';
+    document.getElementById('authModalTitle').textContent='Đăng nhập';
+  }
+}
+function closeAuthModal(){
+  document.getElementById('authModalOverlay')?.classList.remove('active');
+}
+async function doLogin(){
+  const email=(document.getElementById('authEmail').value||'').trim().toLowerCase();
+  const pass=document.getElementById('authPass').value||'';
+  const err=document.getElementById('authError');
+  if(!email||!pass){err.textContent='Nhập email và mật khẩu';err.style.display='block';return}
+  const hash=await sha256(pass);
+  const user=loadUsers().find(u=>u.email===email&&u.passHash===hash);
+  if(!user){err.textContent='Sai email hoặc mật khẩu';err.style.display='block';return}
+  setSession(user,true);
+  closeAuthModal();
+}
+async function doRegister(){
+  const name=(document.getElementById('regName').value||'').trim();
+  const email=(document.getElementById('regEmail').value||'').trim().toLowerCase();
+  const pass=document.getElementById('regPass').value||'';
+  const role=document.getElementById('regRole').value||'user';
+  const err=document.getElementById('authError');
+  if(!name||!email||pass.length<6){err.textContent='Điền họ tên, email và mật khẩu ≥ 6 ký tự';err.style.display='block';return}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){err.textContent='Email không hợp lệ';err.style.display='block';return}
+  let users=loadUsers();
+  if(users.find(u=>u.email===email)){err.textContent='Email đã được đăng ký trên trình duyệt này';err.style.display='block';return}
+  const passHash=await sha256(pass);
+  const user={email,name,role:role==='lab'?'lab':'user',passHash,created:new Date().toISOString()};
+  users.push(user);saveUsers(users);
+  setSession(user,true);
+  closeAuthModal();
+}
+function initAuthUI(){
+  document.getElementById('btnLogin')?.addEventListener('click',()=>openAuthModal('login'));
+  document.getElementById('btnRegister')?.addEventListener('click',()=>openAuthModal('reg'));
+  document.getElementById('btnLogout')?.addEventListener('click',()=>{setSession(null);});
+  document.getElementById('authDoLogin')?.addEventListener('click',()=>doLogin());
+  document.getElementById('authDoReg')?.addEventListener('click',()=>doRegister());
+  document.getElementById('authSwitchReg')?.addEventListener('click',()=>openAuthModal('reg'));
+  document.getElementById('authSwitchLogin')?.addEventListener('click',()=>openAuthModal('login'));
+  document.getElementById('authCancel')?.addEventListener('click',closeAuthModal);
+  document.getElementById('authCancel2')?.addEventListener('click',closeAuthModal);
+  document.getElementById('authModalOverlay')?.addEventListener('click',e=>{if(e.target.id==='authModalOverlay')closeAuthModal()});
+  document.getElementById('authPass')?.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
+  currentUser=getSession();
+  renderAuthUI();
+  seedDemoUsers();
+}
+/* ============================================================
+   DỮ LIỆU GỐC (BASE DATASET – hơn 140 phòng lab, bao gồm VLXD)
+   ============================================================ */
+const BASE_LABS = [
+    // ===== VẬT LIỆU XÂY DỰNG (MỚI BỔ SUNG) =====
+    {id:"vibm-hanoi",name:"Viện Vật liệu Xây dựng (VIBM) – Trụ sở Hà Nội",organization:"Viện Vật liệu Xây dựng – Bộ Xây dựng",address:"Số 235 Nguyễn Trãi, phường Thanh Xuân Trung, quận Thanh Xuân, Hà Nội",region:"Hà Nội",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 003 – ISO/IEC 17025",website:"http://www.vibm.vn",status:"active",established:"1969",tags:["VILAS","Vật liệu xây dựng","Xi măng","Bê tông","Nghiên cứu"],description:"Viện nghiên cứu đầu ngành về vật liệu xây dựng, sở hữu hệ thống phòng thí nghiệm chuyên ngành xi măng & bê tông, vật liệu gốm sứ thủy tinh, vật liệu chịu lửa, vật liệu hữu cơ & hóa phẩm xây dựng, phòng phân tích hóa học. Phòng thí nghiệm hợp chuẩn quốc gia VILAS 003 và LAS XD 1133."},
+    {id:"vibm-south",name:"Phân viện Vật liệu Xây dựng Miền Nam (VIBM South)",organization:"Viện Vật liệu Xây dựng – Bộ Xây dựng",address:"TP. Hồ Chí Minh",region:"TP.HCM",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 500 – LAS XD 165",website:"http://www.vibm.vn",status:"active",tags:["VILAS","LAS-XD","Vật liệu xây dựng","Nghiên cứu"],description:"Phân viện tại TP.HCM với diện tích 3.732 m², gồm Trung tâm Vật liệu xây dựng miền Nam (VILAS 500, LAS XD 165) và Trung tâm Nghiên cứu Vật liệu mới."},
+    {id:"vibm-testing-center",name:"Trung tâm Kiểm định Vật liệu Xây dựng (VIBM)",organization:"Viện Vật liệu Xây dựng – Bộ Xây dựng",address:"Số 235 Nguyễn Trãi, phường Thanh Xuân Trung, quận Thanh Xuân, Hà Nội",region:"Hà Nội",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 003",website:"http://www.vibm.vn",status:"active",tags:["VILAS","Kiểm định","Vật liệu xây dựng"],description:"Trung tâm kiểm định vật liệu xây dựng thuộc VIBM, thực hiện các phép thử xi măng, bê tông, cốt liệu, gạch, vữa và nhiều vật liệu khác."},
+    {id:"vibm-las-1133",name:"Phòng thí nghiệm chuyên ngành VLXD LAS XD 1133 (VIBM)",organization:"Viện Vật liệu Xây dựng – Bộ Xây dựng",address:"Số 235 Nguyễn Trãi, phường Thanh Xuân Trung, quận Thanh Xuân, Hà Nội",region:"Hà Nội",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm LAS-XD",accreditation:"LAS XD 1133",website:"http://www.vibm.vn",status:"active",tags:["LAS-XD","Vật liệu xây dựng","Xi măng","Bê tông"],description:"Phòng thí nghiệm chuyên ngành vật liệu xây dựng LAS XD 1133 thuộc VIBM, phục vụ kiểm tra chất lượng vật liệu cho các dự án."},
+    {id:"vibm-south-las-165",name:"Phòng thí nghiệm chuyên ngành VLXD LAS XD 165 (VIBM Miền Nam)",organization:"Viện Vật liệu Xây dựng – Bộ Xây dựng",address:"TP. Hồ Chí Minh",region:"TP.HCM",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm LAS-XD",accreditation:"LAS XD 165",website:"http://www.vibm.vn",status:"active",tags:["LAS-XD","Vật liệu xây dựng"],description:"Phòng thí nghiệm chuyên ngành VLXD LAS XD 165 thuộc Phân viện VIBM Miền Nam."},
+    {id:"vibm-vilas-500",name:"Phòng thí nghiệm hợp chuẩn quốc gia VILAS 500 (VIBM Miền Nam)",organization:"Viện Vật liệu Xây dựng – Bộ Xây dựng",address:"TP. Hồ Chí Minh",region:"TP.HCM",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 500",website:"http://www.vibm.vn",status:"active",tags:["VILAS","Vật liệu xây dựng"],description:"Phòng thí nghiệm hợp chuẩn quốc gia VILAS 500 tại Phân viện VIBM Miền Nam."},
+    {id:"ibst-las-24068",name:"Phòng thí nghiệm Vật liệu và Hóa phẩm Xây dựng – LAS-XD 24.068",organization:"Viện Khoa học Công nghệ Xây dựng (IBST)",address:"Số 81 Trần Cung, phường Nghĩa Tân, quận Cầu Giấy, Hà Nội",region:"Hà Nội",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm LAS-XD",accreditation:"LAS-XD 24.068",website:"https://ibst.vn",status:"active",tags:["LAS-XD","Vật liệu xây dựng","Hóa phẩm xây dựng"],description:"Phòng thí nghiệm vật liệu và hóa phẩm xây dựng thuộc IBST, đủ điều kiện thí nghiệm xi măng, clanke, cốt liệu, phụ gia, bê tông, vữa, gạch đá, vật liệu hoàn thiện, chống thấm, kim loại và nhiều chỉ tiêu khác."},
+    {id:"hutech-las-hcm005",name:"Trung tâm Thí nghiệm Địa kỹ thuật và Vật liệu Xây dựng – LAS-XD HCM.005",organization:"Trường Đại học Công nghệ TP.HCM (HUTECH)",address:"Số 475A Điện Biên Phủ, phường Thạnh Mỹ Tây, TP.HCM",region:"TP.HCM",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm LAS-XD",accreditation:"LAS-XD HCM.005",website:"https://www.hutech.edu.vn",status:"active",established:"2025",tags:["LAS-XD","Vật liệu xây dựng","Địa kỹ thuật","Đại học"],description:"Trung tâm Thí nghiệm Địa kỹ thuật và Vật liệu Xây dựng thuộc Viện Công nghệ cao HUTECH, được Sở Xây dựng TP.HCM cấp mã số LAS-XD HCM.005 (15/08/2025). Đủ điều kiện triển khai 120 chỉ tiêu thí nghiệm: xi măng, bê tông, cốt liệu, gạch xây, đất đá, vật liệu kim loại, bê tông nhựa, vữa xây, thí nghiệm hiện trường."},
+    {id:"huce-las-115",name:"Phòng thí nghiệm và Nghiên cứu Vật liệu Xây dựng LAS 115",organization:"Trường Đại học Xây dựng Hà Nội (HUCE)",address:"Nhà C3 – Đại học Bách khoa, Hà Nội",region:"Hà Nội",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm LAS-XD",accreditation:"LAS 115",website:"https://khcn.huce.edu.vn",status:"active",tags:["LAS-XD","Vật liệu xây dựng","Đại học"],description:"Phòng thí nghiệm và nghiên cứu vật liệu xây dựng LAS 115 thuộc Khoa Vật liệu Xây dựng, Trường Đại học Xây dựng Hà Nội."},
+    {id:"dut-danang-building-materials",name:"Phòng thí nghiệm Vật liệu Xây dựng – ĐH Bách khoa Đà Nẵng",organization:"Trường Đại học Bách khoa – Đại học Đà Nẵng",address:"Phòng G101, G103, số 54 Nguyễn Lương Bằng, quận Liên Chiểu, Đà Nẵng",region:"Đà Nẵng",field:"Vật liệu xây dựng",type:"Phòng lab nghiên cứu",accreditation:"Phòng thí nghiệm nghiên cứu",website:"https://frbe.dut.udn.vn",status:"active",tags:["Vật liệu xây dựng","Đại học","Nghiên cứu","Xi măng","Bê tông"],description:"Phòng thí nghiệm và nghiên cứu vật liệu xây dựng với diện tích trên 130 m², phục vụ đào tạo, nghiên cứu khoa học và kiểm định chất lượng vật liệu cho khu vực Miền Trung – Tây Nguyên."},
+    {id:"utc-hanoi-las-1337",name:"Phòng thí nghiệm Vật liệu Xây dựng – LAS-XD 1337",organization:"Trường Đại học Kiến trúc Hà Nội",address:"Số 24, Đường Nguyễn Văn Linh, Phường Xuân Hòa, TP. Phúc Yên, Vĩnh Phúc",region:"Miền Bắc",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm LAS-XD",accreditation:"LAS-XD 1337",website:"https://hau.edu.vn",status:"active",tags:["LAS-XD","Vật liệu xây dựng","Đại học"],description:"Phòng thí nghiệm vật liệu xây dựng LAS-XD 1337 thuộc Viện Đào tạo và Ứng dụng Khoa học Công nghệ, Trường Đại học Kiến trúc Hà Nội."},
+    {id:"tlu-las-381",name:"Phòng thí nghiệm Kỹ thuật Công trình và Môi trường – LAS-XD 381",organization:"Trường Đại học Thủy lợi",address:"Số 175 Tây Sơn, quận Đống Đa, Hà Nội",region:"Hà Nội",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm LAS-XD",accreditation:"LAS-XD 381",website:"https://tlu.edu.vn",status:"active",tags:["LAS-XD","Vật liệu xây dựng","Đại học","Thủy lợi"],description:"Phòng thí nghiệm kỹ thuật công trình và môi trường, được cấp chứng nhận LAS-XD 381, phục vụ đào tạo và kiểm định vật liệu xây dựng."},
+    {id:"hcmut-construction-lab",name:"Trung tâm Nghiên cứu Ứng dụng Công nghệ Xây dựng – ĐH Bách khoa TP.HCM",organization:"Trường Đại học Bách khoa – ĐHQG TP.HCM",address:"Số 268 Lý Thường Kiệt, Quận 10, TP.HCM",region:"TP.HCM",field:"Vật liệu xây dựng",type:"Phòng lab nghiên cứu",accreditation:"Phòng thí nghiệm tổng hợp chuyên ngành xây dựng",website:"https://www.hcmut.edu.vn",status:"active",tags:["Vật liệu xây dựng","Đại học","Nghiên cứu","ĐHQG"],description:"Trung tâm nghiên cứu ứng dụng công nghệ xây dựng thuộc Trường Đại học Bách khoa – ĐHQG TP.HCM, có phòng thí nghiệm tổng hợp chuyên ngành xây dựng."},
+    {id:"ctu-rlc",name:"Phòng thí nghiệm Vật liệu Xây dựng Tiên tiến (RLC)",organization:"Trường Đại học Cần Thơ",address:"Phòng RLC 1.32, Tòa nhà Thí nghiệm phức hợp (RLC), Khu II, đường 3/2, quận Ninh Kiều, Cần Thơ",region:"Cần Thơ",field:"Vật liệu xây dựng",type:"Phòng lab nghiên cứu",accreditation:"Dự án ODA",website:"https://coe.ctu.edu.vn",status:"active",tags:["Vật liệu xây dựng","Đại học","Nghiên cứu","Tiên tiến"],description:"Phòng thí nghiệm vật liệu xây dựng tiên tiến thuộc dự án ODA của Trường Đại học Cần Thơ, phục vụ nghiên cứu và đào tạo."},
+    {id:"utc-vilas-047",name:"Phòng thí nghiệm Công trình – VILAS 047",organization:"Trung tâm Khoa học Công nghệ Giao thông Vận tải – Trường Đại học GTVT",address:"Tòa nhà A4, Trường Đại học Giao thông Vận tải, phường Láng Thượng, quận Đống Đa, Hà Nội",region:"Hà Nội",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 047",website:"https://www.utc.edu.vn",status:"active",tags:["VILAS","Vật liệu xây dựng","Giao thông"],description:"Phòng thí nghiệm công trình thuộc Trung tâm KHCN GTVT, Trường Đại học Giao thông Vận tải, được công nhận VILAS 047."},
+    {id:"vicem-hatien-vilas-057",name:"Phòng Thí nghiệm Xi măng Vicem Hà Tiên – Kiên Lương (VILAS 057)",organization:"Chi nhánh Công ty CP Xi măng Vicem Hà Tiên – Nhà máy Xi măng Kiên Lương",address:"Quốc lộ 80, thị trấn Kiên Lương, huyện Kiên Lương, tỉnh Kiên Giang",region:"Miền Nam",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 057",website:"https://www.ha-tien.com.vn",status:"active",tags:["VILAS","Xi măng","Vật liệu xây dựng","Doanh nghiệp"],description:"Phòng thí nghiệm xi măng của Nhà máy Xi măng Kiên Lương (Vicem Hà Tiên), được công nhận VILAS 057."},
+    {id:"luks-cement-vilas-068",name:"Phòng thử nghiệm Xi măng Luks (Việt Nam) – VILAS 068",organization:"Công ty hữu hạn Xi măng Luks (Việt Nam)",address:"30 Thống Nhất, phường Tứ Hạ, thị xã Hương Trà, tỉnh Thừa Thiên Huế",region:"Miền Trung",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 068",website:"https://lukscemet.com.vn",status:"active",tags:["VILAS","Xi măng","Vật liệu xây dựng","Doanh nghiệp"],description:"Phòng thử nghiệm xi măng Luks (Việt Nam), được công nhận VILAS 068."},
+    {id:"vicem-haivan-vilas-069",name:"Phòng Thí nghiệm Xi măng Vicem Hải Vân – VILAS 069",organization:"Công ty Cổ phần Xi măng Vicem Hải Vân",address:"Số 65 Nguyễn Văn Cừ, KCN Liên Chiểu, phường Hòa Hiệp Bắc, quận Liên Chiểu, Đà Nẵng",region:"Đà Nẵng",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 069",website:"https://www.haivan.com.vn",status:"active",tags:["VILAS","Xi măng","Vật liệu xây dựng","Doanh nghiệp"],description:"Phòng thí nghiệm xi măng của Vicem Hải Vân, được công nhận VILAS 069."},
+    {id:"taydo-cement-vilas-082",name:"Trung tâm Kiểm soát Chất lượng Xi măng Tây Đô – VILAS 082",organization:"Công ty Cổ phần Xi măng Tây Đô",address:"Km 14 – QL 91 – P. Phước Thới – Q. Ô Môn – TP. Cần Thơ",region:"Cần Thơ",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 082",website:"https://www.ximangtaydo.com.vn",status:"active",tags:["VILAS","Xi măng","Vật liệu xây dựng","Doanh nghiệp"],description:"Trung tâm kiểm soát chất lượng xi măng Tây Đô, được công nhận VILAS 082."},
+    {id:"chinfon-cement-vilas-088",name:"Phòng Quản lý Chất lượng Xi măng ChinFon – VILAS 088",organization:"Công ty Xi măng ChinFon",address:"Số 288 đường Bạch Đằng, phường Bạch Đằng, TP. Hải Phòng",region:"Miền Bắc",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 088",website:"https://chinfon.com.vn",status:"active",tags:["VILAS","Xi măng","Vật liệu xây dựng","Doanh nghiệp"],description:"Phòng quản lý chất lượng xi măng ChinFon, được công nhận VILAS 088."},
+    {id:"las-24010",name:"Phòng Thí nghiệm Vật liệu và Kiểm định Chất lượng Công trình – LAS-XD 24.010",organization:"Công ty Cổ phần Tư vấn Đầu tư Xây dựng và Kiểm định Xây dựng",address:"Khu phố 8, phường La Khê, quận Hà Đông, TP. Hà Nội",region:"Hà Nội",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm LAS-XD",accreditation:"LAS-XD 24.010",website:"Đang cập nhật",status:"active",tags:["LAS-XD","Vật liệu xây dựng","Kiểm định"],description:"Phòng thí nghiệm vật liệu và kiểm định chất lượng công trình, được cấp chứng nhận LAS-XD 24.010."},
+    {id:"usco-las-887",name:"Phòng Thí nghiệm Vật liệu Xây dựng – LAS-XD 887",organization:"Công ty Cổ phần Khảo sát Thiết kế và Xây dựng USCO",address:"Ngách 32/21 Phố Viên, Hà Nội",region:"Hà Nội",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm LAS-XD",accreditation:"LAS-XD 887",website:"https://usco.vn",status:"active",tags:["LAS-XD","Vật liệu xây dựng","Khảo sát thiết kế"],description:"Phòng thí nghiệm vật liệu xây dựng LAS-XD 887 thuộc Công ty CP Khảo sát Thiết kế và Xây dựng USCO."},
+    {id:"las-24029",name:"Phòng Thí nghiệm Vật liệu và Kiểm định – LAS-XD 24.029",organization:"Công ty Cổ phần Đầu tư Khoa học Công nghệ Vật liệu và Kiểm định",address:"CL5-21, tổ 9, Khu Man Bồi, Gốc Găng, phường Phú Lãm, quận Hà Đông, Hà Nội",region:"Hà Nội",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm LAS-XD",accreditation:"LAS-XD 24.029",website:"Đang cập nhật",status:"active",tags:["LAS-XD","Vật liệu xây dựng","Kiểm định"],description:"Phòng thí nghiệm vật liệu và kiểm định, được cấp chứng nhận LAS-XD 24.029."},
+    {id:"las-204",name:"Phòng Thí nghiệm Vật liệu Xây dựng và Công trình Giao thông – LAS-XD 204",organization:"Trung tâm Kỹ thuật và Công nghệ Đường bộ Phía Bắc",address:"Tổ 32, Phường Long Biên, TP. Hà Nội",region:"Hà Nội",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm LAS-XD",accreditation:"LAS-XD 204",website:"https://nretc.gov.vn",status:"active",established:"2026",tags:["LAS-XD","Vật liệu xây dựng","Giao thông"],description:"Phòng thí nghiệm vật liệu xây dựng và công trình giao thông LAS-XD 204, công bố năng lực hoạt động thí nghiệm chuyên ngành xây dựng (02/2026)."},
+    {id:"vilas-582",name:"Trung tâm Thí nghiệm Vật liệu Xây dựng – VILAS 582",organization:"Đơn vị được công nhận VILAS",address:"Ngõ 319, phố Vĩnh Hưng, phường Vĩnh Hưng, TP. Hà Nội",region:"Hà Nội",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 582 – ISO/IEC 17025",website:"https://boa.gov.vn",status:"active",tags:["VILAS","Vật liệu xây dựng","Hóa học"],description:"Trung tâm thí nghiệm vật liệu xây dựng, được công nhận VILAS 582, lĩnh vực Hóa, Vật liệu xây dựng, hiệu lực đến 30/03/2030."},
+    {id:"las-201-itst",name:"Phòng Thí nghiệm Hóa – Vật liệu Xây dựng LAS 201",organization:"Viện Chuyên ngành Vật liệu và Bảo vệ Công trình – Viện KH&CN GTVT",address:"1252 Đường Láng, Phường Láng, Hà Nội",region:"Hà Nội",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm LAS-XD",accreditation:"LAS 201",website:"https://itst.gov.vn",status:"active",tags:["LAS-XD","Vật liệu xây dựng","Giao thông","Hóa học"],description:"Phòng thí nghiệm hóa – vật liệu xây dựng LAS 201 thuộc Viện Chuyên ngành Vật liệu và Bảo vệ Công trình, Viện KH&CN GTVT, công bố năng lực theo Nghị định 14/2026/NĐ-CP."},
+    {id:"las-175-thuycong",name:"Phòng Nghiên cứu Vật liệu – LAS-XD 175",organization:"Viện Thủy Công",address:"Số 3, ngõ 95, phố Chùa Bộc, phường Trung Liệt, quận Đống Đa, Hà Nội",region:"Hà Nội",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm LAS-XD",accreditation:"LAS-XD 175",website:"https://thuycong.vn",status:"active",tags:["LAS-XD","Vật liệu xây dựng","Thủy công"],description:"Phòng nghiên cứu vật liệu thuộc Viện Thủy Công, đủ điều kiện thí nghiệm xi măng, phụ gia, cốt liệu, bê tông, vữa, gạch, đá, vật liệu chống thấm, kim loại và nhiều chỉ tiêu khác."},
+    {id:"las-1670",name:"Phòng Thí nghiệm Vật liệu Xây dựng – LAS-XD 1670",organization:"Công ty Cổ phần Tư vấn KĐCL Công trình Việt Nam",address:"Số nhà 22 ngõ 86 tổ dân phố số 5, Phường Trung Văn, Quận Nam Từ Liêm, Hà Nội",region:"Hà Nội",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm LAS-XD",accreditation:"LAS-XD 1670",website:"Đang cập nhật",status:"active",tags:["LAS-XD","Vật liệu xây dựng","Xi măng"],description:"Phòng thí nghiệm vật liệu xây dựng LAS-XD 1670, thử nghiệm xi măng, clanhke và nhiều vật liệu khác."},
+    {id:"las-825",name:"Phòng Thí nghiệm Vật liệu Xây dựng – LAS-XD 825",organization:"Công ty Cổ phần Đầu tư Xây dựng SDC",address:"Lô D17 đường Âu Lạc, phường An Đông, TP. Huế, tỉnh Thừa Thiên Huế",region:"Miền Trung",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm LAS-XD",accreditation:"LAS-XD 825",website:"https://sdc.vn",status:"active",tags:["LAS-XD","Vật liệu xây dựng","Xi măng"],description:"Phòng thí nghiệm vật liệu xây dựng LAS-XD 825, thử nghiệm cơ lý xi măng, xi măng bền sunfat."},
+    {id:"las-596",name:"Phòng Thí nghiệm Vật liệu & Kiểm định Xây dựng – LAS-XD 596",organization:"Công ty TNHH Trường Lộc Việt Nam",address:"291 Trương Văn Bang, Phường Thanh Mỹ Lợi, Quận 2, TP.HCM",region:"TP.HCM",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm LAS-XD",accreditation:"LAS-XD 596",website:"Đang cập nhật",status:"active",tags:["LAS-XD","Vật liệu xây dựng","Xi măng","Bê tông"],description:"Phòng thí nghiệm vật liệu & kiểm định xây dựng LAS-XD 596, thử nghiệm cơ lý xi măng, hỗn hợp bê tông và bê tông nặng, cốt liệu."},
+
+    // ===== BỔ SUNG MỚI 2025-2026 (Đào dữ liệu cập nhật) =====
+    {id:"las-xd-24141",name:"Phòng thí nghiệm trọng điểm công trình – LAS-XD 24.141",organization:"Công ty Cổ phần Khoa học Công nghệ và Kiểm định Công trình Xây dựng Việt Nam",address:"Số 23-25 Hồ Mễ Trì, phường Trung Văn, quận Nam Từ Liêm, Hà Nội",region:"Hà Nội",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm LAS-XD",accreditation:"LAS-XD 24.141 (Sở Xây dựng Hà Nội, 20/06/2025)",website:"https://lasxdvn.com",status:"active",established:"2025",tags:["LAS-XD","Vật liệu xây dựng","Xi măng","Bê tông","Kiểm định","Hiện trường"],description:"Phòng thí nghiệm trọng điểm công trình được Sở Xây dựng Hà Nội cấp LAS-XD 24.141 ngày 20/06/2025. Đủ điều kiện thử nghiệm cơ lý xi măng, phụ gia khoáng, bột bả, hỗn hợp bê tông & bê tông nặng, cốt liệu, vữa, nước xây dựng, phụ gia, thép & kim loại, đất cát đắp, bê tông nhựa, nhựa bitum, gạch, đá ốp lát, ngói, dây cáp điện, bentonite, gỗ & composite, sơn chống thấm, vải địa kỹ thuật, thí nghiệm hiện trường. Hiệu lực đến 20/06/2030."},
+    {id:"las-xd-58037",name:"Trung tâm kiểm định vật liệu và kết cấu công trình – LAS-XD 58.037",organization:"Công ty Cổ phần Nghiên cứu Kỹ thuật và Ứng dụng Công nghệ Xây dựng Bách Khoa",address:"Số 6/7A Đường số 3, Cư xá Lữ Gia, Phường 15, Quận 11, TP.HCM",region:"TP.HCM",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm LAS-XD",accreditation:"LAS-XD 58.037 (Sở Xây dựng TP.HCM, 25/02/2025)",website:"Đang cập nhật",status:"active",established:"2025",tags:["LAS-XD","Vật liệu xây dựng","Bê tông","Xi măng","Kiểm định"],description:"Trung tâm kiểm định vật liệu và kết cấu công trình được Sở Xây dựng TP.HCM cấp LAS-XD 58.037. Thử nghiệm xi măng, hỗn hợp bê tông & bê tông nặng, gạch đất sét nung, cốt liệu, vữa, gạch bê tông tự chèn, tấm trải chống thấm bitum biến tính và nhiều chỉ tiêu khác."},
+    {id:"las-xd-58038",name:"Phòng thí nghiệm chuyên ngành xây dựng SCIC – LAS-XD 58.038",organization:"Công ty Cổ phần Tư vấn Kiểm định Xây dựng phía Nam",address:"Số 107 đường Trần Nguyên Đán, Phường 3, quận Bình Thạnh, TP.HCM",region:"TP.HCM",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm LAS-XD",accreditation:"LAS-XD 58.038 (Sở Xây dựng TP.HCM, 28/02/2025)",website:"Đang cập nhật",status:"active",established:"2025",tags:["LAS-XD","Vật liệu xây dựng","Xi măng","Bê tông","Đất"],description:"Phòng thí nghiệm chuyên ngành xây dựng SCIC được cấp LAS-XD 58.038. Thử nghiệm cơ lý xi măng, cốt liệu bê tông & vữa, hỗn hợp bê tông & bê tông nặng, đất trong phòng, bột khoáng, bê tông nhựa, gạch đất sét nung, gạch bê tông, vữa, kim loại & liên kết hàn."},
+    {id:"las-xd-58042",name:"Phòng thí nghiệm vật liệu xây dựng – LAS-XD 58.042",organization:"Công ty Cổ phần Tư vấn Xây dựng Hoàng Long",address:"Số 13 đường An Phú Đông 12, TP.HCM",region:"TP.HCM",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm LAS-XD",accreditation:"LAS-XD 58.042 (Sở Xây dựng TP.HCM, 24/06/2025)",website:"Đang cập nhật",status:"active",established:"2025",tags:["LAS-XD","Vật liệu xây dựng","Đường sắt","Bê tông nhựa"],description:"Phòng thí nghiệm vật liệu xây dựng LAS-XD 58.042, bổ sung chỉ tiêu thí nghiệm đất công trình đường sắt, đá dăm cấp phối đường sắt, bột khoáng, bê tông nhựa chặt, cốt liệu & đất dùng trong xây dựng đường bộ."},
+    {id:"las-xd-24134",name:"Phòng thí nghiệm công trình – LAS-XD 24.134",organization:"Chi nhánh Hà Nội – Công ty Cổ phần Tư vấn Xây dựng Hà Nội",address:"Km 9, Quốc lộ 3, thôn Vĩnh Thanh, xã Vĩnh Ngọc, huyện Đông Anh, Hà Nội",region:"Hà Nội",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm LAS-XD",accreditation:"LAS-XD 24.134 (04/04/2025)",website:"Đang cập nhật",status:"active",established:"2025",tags:["LAS-XD","Vật liệu xây dựng","Xi măng","Bê tông","Hiện trường"],description:"Phòng thí nghiệm công trình LAS-XD 24.134. Thử nghiệm xi măng, phụ gia hóa học, hỗn hợp bê tông & bê tông nặng, cốt liệu, bê tông cốt sợi, đất, đá xây dựng, kim loại & hàn, bê tông nhựa, nhựa bitum/polime, vữa, gạch, nước xây dựng, bentonite, vải địa kỹ thuật, cống bê tông, thí nghiệm hiện trường."},
+    {id:"las-xd-24101",name:"Phòng thí nghiệm vật liệu và kiểm định xây dựng – LAS-XD 24.101",organization:"Công ty Cổ phần Dịch vụ Thương mại và Kiểm định Xây dựng Thăng Long",address:"Đường Vĩnh Ninh, thôn Quỳnh Đô, xã Vĩnh Quỳnh, huyện Thanh Trì, Hà Nội",region:"Hà Nội",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm LAS-XD",accreditation:"LAS-XD 24.101 (26/08/2024)",website:"Đang cập nhật",status:"active",tags:["LAS-XD","Vật liệu xây dựng","Xi măng","Bê tông","Gạch"],description:"Phòng thí nghiệm vật liệu và kiểm định xây dựng LAS-XD 24.101. Thử nghiệm xi măng/clanke, cốt liệu, bê tông các loại, cống bê tông, vữa, gạch các loại (đất sét, bê tông, terazo, granito, gốm), đá ốp lát, đất đắp, bentonite, kim loại/hàn, bitum, bê tông nhựa, ống nhựa, sơn, kính, cửa, phụ gia, chống thấm, bấc thấm."},
+    {id:"las-xd-hcm009",name:"Phòng thí nghiệm chuyên ngành xây dựng – LAS-XD HCM.009",organization:"Công ty Cổ phần Tư vấn Xây dựng Thí nghiệm Sáu Bảy Chín",address:"Số 69/2/19 Nguyễn Gia Trí, phường Thạnh Mỹ Tây, TP.HCM",region:"TP.HCM",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm LAS-XD",accreditation:"LAS-XD HCM.009 (Sở Xây dựng TP.HCM, 11/2025)",website:"Đang cập nhật",status:"active",established:"2025",tags:["LAS-XD","Vật liệu xây dựng","302 chỉ tiêu"],description:"Phòng thí nghiệm chuyên ngành xây dựng được Sở Xây dựng TP.HCM cấp LAS-XD HCM.009 với 302 chỉ tiêu thí nghiệm đầy đủ."},
+    {id:"las-xd-han015",name:"Phòng thí nghiệm Gió – Kết cấu LAS XD 042 / LAS-XD HAN.015",organization:"Viện Khoa học Công nghệ Xây dựng (IBST) – Trung tâm Kết cấu thép và xây dựng",address:"Số 81 Trần Cung, phường Nghĩa Đô, Hà Nội",region:"Hà Nội",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm LAS-XD",accreditation:"LAS-XD HAN.015 (Sở Xây dựng Hà Nội, 13/10/2025)",website:"https://ibst.vn",status:"active",established:"2025",tags:["LAS-XD","Kết cấu","Gió","Kim loại","NDT"],description:"Phòng thí nghiệm Gió – Kết cấu thuộc IBST, mã LAS-XD HAN.015. Thử nghiệm cấu kiện & kết cấu công trình, kim loại, NDT mối hàn, sơn/vecni, dây cáp điện, tấm xi măng sợi, tấm thạch cao, gỗ công nghiệp, aluminium, xí bệt, chậu rửa, cao su/băng chặn nước, vải địa kỹ thuật, composit, ống nhựa, hệ bao che/cửa, cách âm, nhiệt, lan can."},
+    {id:"las-xd-han028",name:"Trung tâm thí nghiệm và kiểm định chất lượng công trình – LAS-XD HAN.028",organization:"Công ty Cổ phần Đầu tư Khoa học Công nghệ Vật liệu và Kiểm định",address:"Số nhà CL5-21, tổ 9A, phường Phú Lương, Hà Nội",region:"Hà Nội",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm LAS-XD",accreditation:"LAS-XD HAN.028 (Sở Xây dựng Hà Nội, 01/2026)",website:"Đang cập nhật",status:"active",established:"2026",tags:["LAS-XD","Vật liệu xây dựng","Kiểm định"],description:"Trung tâm thí nghiệm và kiểm định chất lượng công trình được Sở Xây dựng Hà Nội cấp lại LAS-XD HAN.028 tháng 01/2026, thay thế giấy chứng nhận trước đó."},
+    {id:"las-xd-hcm021",name:"PHÒNG ĐO ĐẠC KIỂM ĐỊNH SÀI GÒN – LAS-XD HCM.021",organization:"Công ty TNHH Xây lắp điện và Đo đạc Kiểm định Sài Gòn",address:"Số 34/5 đường số 7, khu phố 5, Phường Tam Bình, TP.HCM",region:"TP.HCM",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm LAS-XD",accreditation:"LAS-XD HCM.021 (Sở Xây dựng TP.HCM, 10/01/2026)",website:"Đang cập nhật",status:"active",established:"2026",tags:["LAS-XD","Hiện trường","Cáp điện","Ống nhựa"],description:"Phòng đo đạc kiểm định Sài Gòn được cấp LAS-XD HCM.021. Thử nghiệm hiện trường, cáp, ống nhựa, dây bọc nhựa PVC."},
+    {id:"vilas-1481",name:"Phòng thí nghiệm vật liệu xây dựng – VILAS 1481",organization:"Đơn vị được công nhận VILAS",address:"Số 4/6 Đường số 3, Khu phố 4, phường An Khánh, TP. Thủ Đức, TP.HCM",region:"TP.HCM",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 1481 – ISO/IEC 17025",website:"https://boa.gov.vn",status:"active",established:"2026",tags:["VILAS","Vật liệu xây dựng","ISO 17025"],description:"Phòng thí nghiệm vật liệu xây dựng được công nhận VILAS 1481, hiệu lực từ 09/02/2026."},
+    {id:"vilas-891",name:"Phòng thí nghiệm – VILAS 891",organization:"Đơn vị được công nhận VILAS",address:"Tổ dân phố số 7, phường Bỉm Sơn, tỉnh Thanh Hóa",region:"Miền Trung",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 891 – ISO/IEC 17025",website:"https://boa.gov.vn",status:"active",tags:["VILAS","Vật liệu xây dựng","ISO 17025"],description:"Phòng thí nghiệm được công nhận VILAS 891 lĩnh vực Vật liệu xây dựng."},
+    {id:"vilas-1355",name:"Phòng thí nghiệm – KCS và dịch vụ kỹ thuật – VILAS 1355",organization:"Đơn vị được công nhận VILAS",address:"Thôn Cổ Xuân, xã Phong Xuân, huyện Phong Điền, tỉnh Thừa Thiên Huế",region:"Miền Trung",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 1355 – ISO/IEC 17025",website:"https://boa.gov.vn",status:"active",tags:["VILAS","Vật liệu xây dựng","KCS"],description:"Phòng thí nghiệm KCS và dịch vụ kỹ thuật được công nhận VILAS 1355, hiệu lực đến 31/03/2027."},
+    {id:"las-xd-666",name:"Bộ phận Thí nghiệm chuyên ngành xây dựng – LAS-XD 666",organization:"Trung tâm Kỹ thuật Tiêu chuẩn Đo lường Chất lượng 3",address:"Lô C5, Đường Kl, KCN Cát Lái, Quận 2 / Số 7 đường số 1, KCN Biên Hòa 1, Đồng Nai",region:"TP.HCM",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm LAS-XD",accreditation:"LAS-XD 666",website:"Đang cập nhật",status:"active",tags:["LAS-XD","Vật liệu xây dựng","Xi măng","Bê tông","Kim loại"],description:"Bộ phận thí nghiệm chuyên ngành xây dựng LAS-XD 666 thuộc Trung tâm Kỹ thuật 3. Thử nghiệm kim loại hàn, đất xây dựng, cốt liệu, hỗn hợp bê tông, vữa, xi măng (cơ lý & hóa), phụ gia, nhựa bitum, bột khoáng, bê tông nhựa, gạch các loại."},
+    {id:"las-xd-24100",name:"Trung tâm thí nghiệm và Địa vật lý – LAS-XD 24.100",organization:"Công ty Cổ phần Tư vấn Đầu tư Xây dựng và Thương mại Việt Bắc",address:"LK 23/18 Ngô Thì Nhậm, phường La Khê / Hà Cầu, quận Hà Đông, Hà Nội",region:"Hà Nội",field:"Vật liệu xây dựng",type:"Phòng thử nghiệm LAS-XD",accreditation:"LAS-XD 24.100 (26/08/2024)",website:"Đang cập nhật",status:"active",tags:["LAS-XD","Vật liệu xây dựng","Địa vật lý","Xi măng"],description:"Trung tâm thí nghiệm và Địa vật lý LAS-XD 24.100. Thử nghiệm cơ lý xi măng, hỗn hợp bê tông, cốt liệu, đất, thép, bê tông nhựa, nhựa bitum, hiện trường, gạch, vữa, bột khoáng, gạch bê tông, gạch lát, bê tông nhẹ, kính, bentonite."},
+
+    // ===== CÁC LĨNH VỰC KHÁC (GIỮ NGUYÊN TỪ PHIÊN BẢN TRƯỚC) =====
+    // (Rút gọn để tiết kiệm không gian – toàn bộ dữ liệu cũ vẫn được giữ nguyên)
+    {id:"ptn-polymer-composite-hust",name:"PTN Trọng điểm Quốc gia về Vật liệu Polyme và Compozit",organization:"Trường Đại học Bách khoa Hà Nội",address:"Số 1 Đại Cồ Việt, phường Bách Khoa, quận Hai Bà Trưng, Hà Nội",region:"Hà Nội",field:"Vật liệu & Nano",type:"Trọng điểm quốc gia",accreditation:"PTN trọng điểm quốc gia",website:"https://www.hust.edu.vn",status:"active",established:"2000–2013",tags:["Trọng điểm quốc gia","Vật liệu","Polyme","Compozit"],description:"Nghiên cứu vật liệu polyme, compozit tiên tiến; chế tạo và thử nghiệm vật liệu cho các ngành cơ khí, xây dựng, giao thông và năng lượng."},
+    {id:"ptn-electronic-materials-vast",name:"PTN Trọng điểm Quốc gia về Vật liệu và Linh kiện Điện tử",organization:"Viện Khoa học Vật liệu – Viện Hàn lâm KH&CN Việt Nam",address:"Số 18 Hoàng Quốc Việt, phường Nghĩa Đô, quận Cầu Giấy, Hà Nội",region:"Hà Nội",field:"Vật liệu & Nano",type:"Trọng điểm quốc gia",accreditation:"PTN trọng điểm quốc gia",website:"https://www.vast.vn",status:"active",established:"2000–2013",tags:["Trọng điểm quốc gia","Vật liệu","Linh kiện điện tử","Bán dẫn"],description:"Nghiên cứu chế tạo vật liệu bán dẫn, vật liệu từ tiên tiến, linh kiện điện tử và cảm biến."},
+    {id:"ptn-mechatronics-danang",name:"PTN Trọng điểm Quốc gia dùng chung Cơ điện tử và Ứng dụng",organization:"Trường Đại học Bách khoa – Đại học Đà Nẵng",address:"Số 54 Nguyễn Lương Bằng, phường Hòa Khánh, quận Liên Chiểu, Đà Nẵng",region:"Đà Nẵng",field:"Cơ khí & Tự động hóa",type:"Trọng điểm quốc gia",accreditation:"PTN trọng điểm quốc gia",website:"https://www.udn.vn",status:"active",established:"2000–2013",tags:["Trọng điểm quốc gia","Cơ điện tử","Tự động hóa","Robot"],description:"Bao gồm PTN Robots, PTN IoTs, PTN Khoa học vật liệu, Khuôn mẫu, Thiết kế mô phỏng."},
+    {id:"ptn-enzyme-protein-vnu",name:"PTN Trọng điểm Công nghệ Enzym và Protein",organization:"Trường Đại học Khoa học Tự nhiên – ĐHQG Hà Nội",address:"Số 334 Nguyễn Trãi, phường Thanh Xuân Trung, quận Thanh Xuân, Hà Nội",region:"Hà Nội",field:"Hóa học & Sinh học",type:"Trọng điểm quốc gia",accreditation:"PTN trọng điểm quốc gia",website:"https://www.hus.vnu.edu.vn",status:"active",established:"2000–2013",tags:["Trọng điểm quốc gia","Công nghệ sinh học","Enzym","Protein"],description:"Nghiên cứu enzyme, protein tái tổ hợp, genomic, proteomic, sinh học nano và ứng dụng trong y học, nông nghiệp, thực phẩm."},
+    {id:"cleanroom-nano-vnu",name:"Phòng thí nghiệm siêu sạch (Cleanroom)",organization:"Trung tâm Nano và Năng lượng – Trường Đại học Khoa học Tự nhiên, ĐHQG Hà Nội",address:"Số 334 Nguyễn Trãi, phường Thanh Xuân Trung, quận Thanh Xuân, Hà Nội",region:"Hà Nội",field:"Vật liệu & Nano",type:"Phòng lab nghiên cứu",accreditation:"Đầu tư ~5 triệu USD",website:"https://www.hus.vnu.edu.vn",status:"active",established:"2026",tags:["Vật liệu nano","Bán dẫn","Cleanroom","Nghiên cứu"],description:"Phòng sạch phục vụ nghiên cứu chế tạo linh kiện bán dẫn, vi mạch, màng mỏng vật liệu."},
+    {id:"vnu-analysis-food-safety",name:"PTN Trọng điểm Công nghệ Phân tích phục vụ Kiểm định Môi trường và An toàn Thực phẩm",organization:"Trường Đại học Khoa học Tự nhiên – ĐHQG Hà Nội",address:"Số 334 Nguyễn Trãi, phường Thanh Xuân Trung, quận Thanh Xuân, Hà Nội",region:"Hà Nội",field:"Hóa học & Sinh học",type:"Trọng điểm cấp ĐHQG",accreditation:"PTN trọng điểm cấp ĐHQG",website:"https://hus.vnu.edu.vn",status:"active",tags:["Trọng điểm ĐHQG","Phân tích","Môi trường","An toàn thực phẩm"],description:"Nghiên cứu công nghệ phân tích phục vụ kiểm định môi trường và an toàn thực phẩm."},
+    {id:"vnu-advanced-materials-green",name:"PTN Trọng điểm Vật liệu Tiên tiến ứng dụng trong Phát triển Xanh",organization:"Trường Đại học Khoa học Tự nhiên – ĐHQG Hà Nội",address:"Số 334 Nguyễn Trãi, phường Thanh Xuân Trung, quận Thanh Xuân, Hà Nội",region:"Hà Nội",field:"Vật liệu & Nano",type:"Trọng điểm cấp ĐHQG",accreditation:"PTN trọng điểm cấp ĐHQG",website:"https://hus.vnu.edu.vn",status:"active",tags:["Trọng điểm ĐHQG","Vật liệu tiên tiến","Phát triển xanh"],description:"Nghiên cứu vật liệu tiên tiến ứng dụng trong phát triển xanh."},
+    {id:"vast-genetic-technology",name:"PTN Trọng điểm Công nghệ Gen",organization:"Viện Công nghệ Sinh học – Viện Hàn lâm KH&CN Việt Nam",address:"Số 18 Hoàng Quốc Việt, phường Nghĩa Đô, quận Cầu Giấy, Hà Nội",region:"Hà Nội",field:"Hóa học & Sinh học",type:"Trọng điểm quốc gia",accreditation:"PTN trọng điểm quốc gia",website:"https://www.vast.vn",status:"active",established:"2005",tags:["Trọng điểm quốc gia","Công nghệ gen","Sinh học"],description:"PTN trọng điểm công nghệ gen do Viện Công nghệ sinh học chủ trì."},
+    {id:"vast-air-environment",name:"Phòng Thí nghiệm Trọng điểm về Môi trường Không khí",organization:"Viện Hàn lâm KH&CN Việt Nam",address:"Số 18 Hoàng Quốc Việt, phường Nghĩa Đô, quận Cầu Giấy, Hà Nội",region:"Hà Nội",field:"Môi trường",type:"Phòng thử nghiệm ISO",accreditation:"ISO/IEC 17025:2017",website:"https://www.vast.vn",status:"active",tags:["Môi trường không khí","ISO 17025","Quan trắc"],description:"Quan trắc và phân tích chất lượng không khí, nghiên cứu ô nhiễm không khí."},
+    {id:"hust-automation",name:"PTN Tự động hóa",organization:"Trường Điện – Điện tử – ĐH Bách khoa Hà Nội",address:"Số 1 Đại Cồ Việt, phường Bách Khoa, quận Hai Bà Trưng, Hà Nội",region:"Hà Nội",field:"Cơ khí & Tự động hóa",type:"PTN đầu tư tập trung",accreditation:"PTN trọng điểm cấp trường",website:"https://www.hust.edu.vn",status:"active",tags:["Tự động hóa","Robot","IoT công nghiệp"],description:"Nghiên cứu hệ thống điều khiển tự động, robot, IoT công nghiệp."},
+    {id:"hust-industrial-control",name:"PTN Hệ thống Điều khiển Công nghiệp",organization:"Trường Điện – Điện tử – ĐH Bách khoa Hà Nội",address:"Số 1 Đại Cồ Việt, phường Bách Khoa, quận Hai Bà Trưng, Hà Nội",region:"Hà Nội",field:"Cơ khí & Tự động hóa",type:"PTN đầu tư tập trung",accreditation:"PTN trọng điểm cấp trường",website:"https://www.hust.edu.vn",status:"active",tags:["Điều khiển công nghiệp","SCADA","PLC"],description:"Nghiên cứu điều khiển công nghiệp, SCADA, PLC, hệ thống nhúng."},
+    {id:"hust-nano-opto",name:"PTN Nano – Quang điện tử",organization:"Viện ITIMS – ĐH Bách khoa Hà Nội",address:"Số 1 Đại Cồ Việt, phường Bách Khoa, quận Hai Bà Trưng, Hà Nội",region:"Hà Nội",field:"Vật liệu & Nano",type:"PTN đầu tư tập trung",accreditation:"PTN trọng điểm cấp trường",website:"https://www.hust.edu.vn",status:"active",tags:["Vật liệu nano","Quang điện tử","Cảm biến"],description:"Nghiên cứu vật liệu nano, linh kiện quang điện tử, cảm biến."},
+    {id:"hust-viettel-5g6g",name:"PTN Nghiên cứu 5G/6G Viettel – HUST",organization:"ĐH Bách khoa Hà Nội & Tập đoàn Viettel",address:"Số 1 Đại Cồ Việt, phường Bách Khoa, quận Hai Bà Trưng, Hà Nội",region:"Hà Nội",field:"Công nghệ thông tin & Điện tử",type:"Phòng lab doanh nghiệp",accreditation:"Hợp tác Viettel – HUST",website:"https://www.hust.edu.vn",status:"active",established:"2024",tags:["5G","6G","Viễn thông","Doanh nghiệp"],description:"Phòng thí nghiệm nghiên cứu công nghệ 5G/6G, phát triển nền tảng mạng di động thế hệ mới."},
+    {id:"hust-electrochemistry-energy",name:"PTN Nghiên cứu Điện hóa và Chuyển đổi Năng lượng",organization:"Trường Hóa và Khoa học Sự sống – ĐH Bách khoa Hà Nội",address:"Số 1 Đại Cồ Việt, phường Bách Khoa, quận Hai Bà Trưng, Hà Nội",region:"Hà Nội",field:"Năng lượng",type:"Phòng lab nghiên cứu",accreditation:"PTN nghiên cứu",website:"https://scls.hust.edu.vn",status:"active",tags:["Năng lượng","Điện hóa","Pin","Hydrogen xanh"],description:"Nghiên cứu điện hóa tiên tiến, tích trữ và chuyển đổi năng lượng xanh."},
+    {id:"hust-amca",name:"PTN Hóa học Vật liệu Tiên tiến và Ứng dụng (Lab. AMCA)",organization:"Trường Hóa và Khoa học Sự sống – ĐH Bách khoa Hà Nội",address:"Số 1 Đại Cồ Việt, phường Bách Khoa, quận Hai Bà Trưng, Hà Nội",region:"Hà Nội",field:"Vật liệu & Nano",type:"Phòng lab nghiên cứu",accreditation:"PTN nghiên cứu",website:"https://scls.hust.edu.vn",status:"active",tags:["Vật liệu tiên tiến","Nano","Năng lượng","Y sinh"],description:"Nghiên cứu hóa học vật liệu tiên tiến, vật liệu nano, vật liệu chức năng."},
+    {id:"hust-pgre",name:"PTN Lưới điện và Năng lượng Tái tạo (PGRE Lab)",organization:"Trường Điện – Điện tử – ĐH Bách khoa Hà Nội",address:"Số 1 Đại Cồ Việt, phường Bách Khoa, quận Hai Bà Trưng, Hà Nội",region:"Hà Nội",field:"Năng lượng",type:"Phòng lab nghiên cứu",accreditation:"PTN nghiên cứu",website:"https://research.hust.edu.vn",status:"active",tags:["Năng lượng tái tạo","Lưới điện","Nghiên cứu"],description:"Nghiên cứu lưới điện thông minh và năng lượng tái tạo."},
+    {id:"vnuhcm-material-tech",name:"PTN Trọng điểm ĐHQG-HCM Công nghệ Vật liệu",organization:"Trường Đại học Bách khoa – ĐHQG TP.HCM",address:"Nhà C4, 268 Lý Thường Kiệt, Phường Diên Hồng, TP.HCM",region:"TP.HCM",field:"Vật liệu & Nano",type:"Trọng điểm cấp ĐHQG",accreditation:"PTN trọng điểm ĐHQG-HCM",website:"https://research.vnuhcm.edu.vn",status:"active",established:"2009",tags:["Trọng điểm ĐHQG","Vật liệu nano","Bán dẫn","Cảm biến"],description:"Nghiên cứu phát triển vật liệu tiên tiến cho vi điện tử, MEMS, cảm biến và năng lượng."},
+    {id:"vnuhcm-chemical-petroleum",name:"PTN Trọng điểm ĐHQG-HCM Công nghệ Hóa học và Dầu khí (Key CEPP Lab)",organization:"Trường Đại học Bách khoa – ĐHQG TP.HCM",address:"Phòng 118-119B2, 268 Lý Thường Kiệt, quận 10, TP.HCM",region:"TP.HCM",field:"Hóa học & Sinh học",type:"Trọng điểm cấp ĐHQG",accreditation:"PTN trọng điểm ĐHQG-HCM",website:"https://research.vnuhcm.edu.vn",status:"active",tags:["Trọng điểm ĐHQG","Hóa học","Dầu khí","Vật liệu tiên tiến"],description:"Nghiên cứu tổng hợp và ứng dụng vật liệu tiên tiến phục vụ năng lượng bền vững, môi trường và y sinh."},
+    {id:"vnuhcm-waste-treatment",name:"PTN Trọng điểm ĐHQG-HCM Công nghệ Xử lý Chất thải Bậc cao",organization:"ĐHQG TP.HCM",address:"Khu đô thị ĐHQG-HCM, phường Linh Trung, TP. Thủ Đức, TP.HCM",region:"TP.HCM",field:"Môi trường",type:"Trọng điểm cấp ĐHQG",accreditation:"PTN trọng điểm ĐHQG-HCM",website:"https://research.vnuhcm.edu.vn",status:"active",tags:["Trọng điểm ĐHQG","Môi trường","Xử lý chất thải"],description:"Nghiên cứu công nghệ xử lý chất thải rắn, nước thải, chất thải nguy hại và tái chế."},
+    {id:"vnuhcm-information-security",name:"Phòng thí nghiệm An toàn Thông tin",organization:"Trường Đại học Khoa học Tự nhiên – ĐHQG TP.HCM",address:"227 Nguyễn Văn Cừ, phường Chợ Quán, quận 5, TP.HCM",region:"TP.HCM",field:"Công nghệ thông tin & Điện tử",type:"Phòng lab nghiên cứu",accreditation:"Đầu tư 70 tỷ đồng",website:"https://www.hcmus.edu.vn",status:"active",tags:["An toàn thông tin","Bảo mật","AI"],description:"Nghiên cứu an toàn thông tin, bảo mật hệ thống, mã hóa và ứng dụng AI trong an ninh mạng."},
+    {id:"vnuhcm-amti",name:"Viện Công nghệ Vật liệu Tiên tiến (AMTI)",organization:"ĐHQG TP.HCM",address:"TP.HCM",region:"TP.HCM",field:"Vật liệu & Nano",type:"Phòng lab nghiên cứu",accreditation:"Viện nghiên cứu",website:"https://vnuhcmamti.edu.vn",status:"active",established:"2025",tags:["Vật liệu tiên tiến","Nano","Sáp nhập"],description:"Được thành lập từ sáp nhập Viện Công nghệ Nano (INT) và Trung tâm Vật liệu và Kiến trúc Đổi mới (INOMAR)."},
+    {id:"vnu-ev-battery",name:"Phòng thử nghiệm Pin EV (VILAS)",organization:"Trường Đại học Công nghệ – ĐHQG Hà Nội",address:"Số 144 Xuân Thủy, phường Dịch Vọng Hậu, quận Cầu Giấy, Hà Nội",region:"Hà Nội",field:"Năng lượng",type:"Phòng thử nghiệm ISO",accreditation:"Hướng tới VILAS – ISO/IEC 17025",website:"https://fepn.uet.vnu.edu.vn",status:"soon",established:"2026",tags:["Năng lượng","Pin EV","Thử nghiệm","Sắp vận hành"],description:"Phòng thử nghiệm pin xe điện (EV), hợp tác với Hàn Quốc, hướng tới Trung tâm nghiên cứu, phát triển và thử nghiệm pin EV."},
+    {id:"vsap-lab-danang",name:"VSAP Lab – Phòng thí nghiệm Sản xuất Công nghệ Đóng gói Tiên tiến",organization:"Công ty Cổ phần VSAP LAB",address:"Khu Công nghệ thông tin tập trung – Công viên phần mềm Đà Nẵng số 2, Đà Nẵng",region:"Đà Nẵng",field:"Bán dẫn",type:"Phòng lab doanh nghiệp",accreditation:"Dự án 1.800 tỷ đồng",website:"Đang cập nhật",status:"soon",established:"2026",tags:["Bán dẫn","Đóng gói vi mạch","Doanh nghiệp","Sắp vận hành"],description:"Nhà máy Fab-Lab phục vụ sản xuất thử nghiệm, đóng gói và kiểm thử vi mạch bán dẫn; tổng vốn 1.800 tỷ đồng, công suất thiết kế 10 triệu sản phẩm/năm."},
+    {id:"gialai-semiconductor-quynhon",name:"PTN Bán dẫn Dùng chung – Đại học Quy Nhơn",organization:"Trường Đại học Quy Nhơn (Gia Lai)",address:"Trường Đại học Quy Nhơn, Gia Lai",region:"Miền Trung",field:"Bán dẫn",type:"Phòng lab nghiên cứu",accreditation:"Dự án 100 tỷ đồng (2026–2027)",website:"https://qnu.edu.vn",status:"soon",established:"2026–2027",tags:["Bán dẫn","Vi mạch","Đào tạo","Sắp vận hành"],description:"Dự án phòng thí nghiệm bán dẫn dùng chung với tổng vốn 100 tỷ đồng, gồm phòng thiết kế, tạo mẫu vi mạch và phòng kiểm thử."},
+    {id:"deye-solar-lab-hcmute",name:"Phòng thí nghiệm Năng lượng Mặt trời Deye – HCMUTE",organization:"Trường Đại học Công nghệ Kỹ thuật TP.HCM (HCMUTE) & Deye Vietnam",address:"TP.HCM",region:"TP.HCM",field:"Năng lượng",type:"Phòng lab doanh nghiệp",accreditation:"Tài trợ 20.000 USD từ Deye",website:"https://hcmute.edu.vn",status:"active",established:"2025",tags:["Năng lượng mặt trời","Pin quang điện","ESS","Doanh nghiệp"],description:"Phòng thí nghiệm năng lượng mặt trời khánh thành 23/12/2025, trang bị hybrid inverter và hệ thống lưu trữ năng lượng (ESS)."},
+    {id:"ja-solar-vietnam",name:"Trung tâm Thử nghiệm Sản phẩm Năng lượng Mặt trời JA Solar Việt Nam",organization:"JA Solar Việt Nam",address:"Lô G, Khu công nghiệp Quang Châu, phường Nếnh, tỉnh Bắc Ninh",region:"Miền Bắc",field:"Năng lượng",type:"Phòng thử nghiệm ISO",accreditation:"ISO/IEC 17025 (BoA)",website:"https://www.jasolar.com",status:"active",tags:["Năng lượng mặt trời","Tấm pin quang điện","Thử nghiệm"],description:"Trung tâm thử nghiệm sản phẩm năng lượng mặt trời JA Solar Việt Nam, được công nhận ISO/IEC 17025."},
+    {id:"nihbt-hanoi",name:"Viện Huyết học – Truyền máu Trung ương",organization:"Bộ Y tế",address:"Phố Phạm Văn Bạch, phường Yên Hòa, quận Cầu Giấy, Hà Nội",region:"Hà Nội",field:"Y tế & Xét nghiệm",type:"Phòng xét nghiệm",accreditation:"ISO 15189:2022 (9 đơn vị xét nghiệm)",website:"https://www.nihbt.org.vn",status:"active",established:"2025",tags:["Huyết học","Truyền máu","ISO 15189","Xét nghiệm"],description:"Cơ sở chuyên khoa đầu ngành về huyết học và truyền máu; 9 đơn vị xét nghiệm được công nhận ISO 15189:2022."},
+    {id:"bach-mai-lab",name:"Phòng xét nghiệm Bệnh viện Bạch Mai",organization:"Bệnh viện Bạch Mai",address:"Số 78 Giải Phóng, phường Phương Mai, quận Đống Đa, Hà Nội",region:"Hà Nội",field:"Y tế & Xét nghiệm",type:"Phòng xét nghiệm",accreditation:"ISO 15189:2007",website:"https://bachmai.gov.vn",status:"active",tags:["ISO 15189","Xét nghiệm y khoa","Bệnh viện"],description:"Một trong bốn phòng xét nghiệm y khoa Việt Nam đầu tiên đạt chuẩn quốc tế ISO 15189:2007."},
+    {id:"hue-central-hospital-lab",name:"Phòng xét nghiệm Bệnh viện Trung ương Huế",organization:"Bệnh viện Trung ương Huế",address:"Số 16 Lê Lợi, phường Phú Hội, TP. Huế",region:"Miền Trung",field:"Y tế & Xét nghiệm",type:"Phòng xét nghiệm",accreditation:"ISO 15189:2007",website:"https://huecentralhospital.vn",status:"active",tags:["ISO 15189","Xét nghiệm y khoa","Bệnh viện"],description:"Một trong bốn phòng xét nghiệm y khoa Việt Nam đầu tiên đạt chuẩn quốc tế ISO 15189:2007."},
+    {id:"pham-ngoc-thach-lab",name:"Phòng xét nghiệm Bệnh viện Phạm Ngọc Thạch",organization:"Bệnh viện Phạm Ngọc Thạch",address:"TP.HCM",region:"TP.HCM",field:"Y tế & Xét nghiệm",type:"Phòng xét nghiệm",accreditation:"ISO 15189:2007",website:"Đang cập nhật",status:"active",tags:["ISO 15189","Xét nghiệm y khoa","Bệnh viện"],description:"Một trong bốn phòng xét nghiệm y khoa Việt Nam đầu tiên đạt chuẩn quốc tế ISO 15189:2007."},
+    {id:"hcm-preventive-medicine",name:"Trung tâm Y tế Dự phòng TP.HCM",organization:"Sở Y tế TP.HCM",address:"TP.HCM",region:"TP.HCM",field:"Y tế & Xét nghiệm",type:"Phòng xét nghiệm",accreditation:"ISO 15189:2007",website:"Đang cập nhật",status:"active",tags:["ISO 15189","Y tế dự phòng","Xét nghiệm"],description:"Một trong bốn phòng xét nghiệm y khoa Việt Nam đầu tiên đạt chuẩn quốc tế ISO 15189:2007."},
+    {id:"medlatec-can-tho-iso",name:"Trung tâm Xét nghiệm MEDLATEC Cần Thơ (ISO 15189:2022)",organization:"MEDLATEC",address:"Cần Thơ",region:"Cần Thơ",field:"Y tế & Xét nghiệm",type:"Phòng xét nghiệm",accreditation:"ISO 15189:2022",website:"https://medlatec.vn",status:"active",established:"2026",tags:["ISO 15189","Xét nghiệm","MEDLATEC"],description:"Trung tâm Xét nghiệm – Phòng khám MEDLATEC Cần Thơ đạt chứng chỉ ISO 15189:2022."},
+    {id:"phuong-chau-soc-trang",name:"Bệnh viện Quốc tế Phương Châu Sóc Trăng (ISO 15189:2022)",organization:"Bệnh viện Quốc tế Phương Châu",address:"Sóc Trăng",region:"Miền Nam",field:"Y tế & Xét nghiệm",type:"Phòng xét nghiệm",accreditation:"ISO 15189:2022",website:"https://phuongchau.com",status:"active",established:"2026",tags:["ISO 15189","Xét nghiệm","ĐBSCL"],description:"Bệnh viện Quốc tế Phương Châu Sóc Trăng đạt chứng nhận ISO 15189:2022."},
+    {id:"ump-molecular-biomedicine",name:"Trung tâm Y Sinh học Phân tử",organization:"Đại học Y Dược TP.HCM",address:"Tầng 8, tòa nhà 15 tầng, 217 Hồng Bàng, phường Chợ Lớn, quận 5, TP.HCM",region:"TP.HCM",field:"Y tế & Xét nghiệm",type:"Phòng lab nghiên cứu",accreditation:"Đang cập nhật",website:"https://www.ump.edu.vn",status:"active",tags:["Y sinh phân tử","Di truyền","Chẩn đoán"],description:"Nghiên cứu y sinh học phân tử, di truyền, sinh học phân tử ứng dụng trong chẩn đoán và điều trị bệnh."},
+    {id:"hmu-central-labo",name:"Labo Trung tâm – Đại học Y Hà Nội",organization:"Trường Đại học Y Hà Nội",address:"Tầng 3, nhà B1, Số 1 Tôn Thất Tùng, phường Kim Liên, quận Đống Đa, Hà Nội",region:"Hà Nội",field:"Y tế & Xét nghiệm",type:"Phòng thử nghiệm ISO",accreditation:"VILAS (Hóa, Sinh)",website:"https://hmu.edu.vn",status:"active",tags:["Y tế","Xét nghiệm","ISO 17025"],description:"Phòng thí nghiệm trung tâm phục vụ đào tạo và nghiên cứu y khoa."},
+    {id:"gene-viet-center",name:"Trung tâm Xét nghiệm Gene – Gene Viet",organization:"Công ty Cổ phần Sinh học Phân tử Gene Viet",address:"Hà Nội",region:"Hà Nội",field:"Y tế & Xét nghiệm",type:"Phòng xét nghiệm",accreditation:"Hợp tác JS Link (Hàn Quốc)",website:"https://geneviet.vn",status:"soon",established:"2026",tags:["Y sinh","Xét nghiệm gene","AI","Sắp vận hành"],description:"Trung tâm xét nghiệm gene hiện đại hàng đầu khu vực, hợp tác với JS Link (Hàn Quốc), dự kiến hoạt động Quý II/2026."},
+    {id:"vast-applied-analysis",name:"Trung tâm Phân tích Ứng dụng",organization:"Viện Hàn lâm KH&CN Việt Nam",address:"Phòng 105, Nhà A13, Số 18 Hoàng Quốc Việt, phường Nghĩa Đô, quận Cầu Giấy, Hà Nội",region:"Hà Nội",field:"Hóa học & Sinh học",type:"Phòng lab nghiên cứu",accreditation:"Đang cập nhật",website:"https://itt.vast.vn",status:"active",tags:["Phân tích","Hóa học","Sinh học","Dịch vụ"],description:"Cung cấp dịch vụ phân tích hóa học, sinh học, vật liệu."},
+    {id:"vast-natural-products",name:"PTN Chuyên sâu Nghiên cứu và Phát triển Sản phẩm Thiên nhiên",organization:"Viện Hóa học – Viện Hàn lâm KH&CN Việt Nam",address:"Số 18 Hoàng Quốc Việt, phường Nghĩa Đô, quận Cầu Giấy, Hà Nội",region:"Hà Nội",field:"Hóa học & Sinh học",type:"Phòng lab nghiên cứu",accreditation:"Dự án 50 tỷ đồng (2025)",website:"https://www.vienhoahoc.ac.vn",status:"active",established:"2025",tags:["Sản phẩm thiên nhiên","Hóa học","Nghiên cứu"],description:"Phòng thí nghiệm chuyên sâu phục vụ nghiên cứu và phát triển các sản phẩm thiên nhiên."},
+    {id:"vast-nano-synthesis",name:"PTN Tự động Tổng hợp Vật liệu Nano",organization:"Viện Khoa học Vật liệu – Viện Hàn lâm KH&CN Việt Nam",address:"Số 18 Hoàng Quốc Việt, phường Nghĩa Đô, quận Cầu Giấy, Hà Nội",region:"Hà Nội",field:"Vật liệu & Nano",type:"Phòng lab nghiên cứu",accreditation:"Đang phát triển",website:"https://www.vast.vn",status:"soon",established:"2026",tags:["Vật liệu nano","Tự động hóa","AI","Sắp vận hành"],description:"Phòng thí nghiệm tự động tổng hợp vật liệu nano, ứng dụng robot và trí tuệ nhân tạo, dự kiến vận hành từ tháng 10/2026."},
+    {id:"vast-energy-environment",name:"PTN Phân tích Chất lượng – Viện Khoa học Công nghệ Năng lượng và Môi trường",organization:"Viện Khoa học Công nghệ Năng lượng và Môi trường – Viện Hàn lâm KH&CN Việt Nam",address:"Phòng 800, nhà A30, số 18 Hoàng Quốc Việt, phường Nghĩa Đô, quận Cầu Giấy, Hà Nội",region:"Hà Nội",field:"Môi trường",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 366",website:"https://www.vast.vn",status:"active",tags:["ISO 17025","Môi trường","Năng lượng"],description:"Phân tích chất lượng môi trường, năng lượng; cung cấp dịch vụ quan trắc và thử nghiệm môi trường."},
+    {id:"vilas-1595-radiation",name:"VILAS 1595 – Trung tâm An toàn Bức xạ",organization:"Viện Khoa học và Kỹ thuật Hạt nhân",address:"179 đường Hoàng Quốc Việt, phường Nghĩa Đô, TP. Hà Nội",region:"Hà Nội",field:"Hóa học & Sinh học",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 1595 – ISO/IEC 17025",website:"https://boa.gov.vn",status:"active",tags:["ISO 17025","Bức xạ","Đo lường"],description:"Trung tâm An toàn Bức xạ, được công nhận VILAS 1595, lĩnh vực Hóa học và Đo lường – hiệu chuẩn."},
+    {id:"vilas-1596-electrical",name:"VILAS 1596 – Phòng thí nghiệm Điện – Điện tử",organization:"Công ty Cổ phần Kiểm định và Chứng nhận Bách Khoa",address:"C02-L03, khu A, khu đô thị mới Dương Nội, phường Dương Nội, TP. Hà Nội",region:"Hà Nội",field:"Công nghệ thông tin & Điện tử",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 1596 – ISO/IEC 17025",website:"https://boa.gov.vn",status:"active",tags:["ISO 17025","Điện – Điện tử","Kiểm định"],description:"Phòng thí nghiệm Điện – Điện tử, được công nhận VILAS 1596."},
+    {id:"vilas-1597-iqc",name:"VILAS 1597 – Phòng thử nghiệm IQC Hồ Chí Minh",organization:"Công ty Cổ phần Chứng nhận và Giám định IQC",address:"Số 10, Đường 91, Khu phố 2, Phường Cát Lái, TP.HCM",region:"TP.HCM",field:"Hóa học & Sinh học",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 1597 – ISO/IEC 17025",website:"https://boa.gov.vn",status:"active",tags:["ISO 17025","Hóa học","Giám định"],description:"Phòng thử nghiệm IQC Hồ Chí Minh, được công nhận VILAS 1597, lĩnh vực Hóa học."},
+    {id:"vilas-1598-vielab",name:"VILAS 1598 – Phòng Phân tích Hóa và Môi trường",organization:"Công ty TNHH Công nghệ và Phân tích Môi trường ViElab",address:"Số 33BT6 đường Foresa 6E KĐT Sinh thái Xuân Phương, phường Xuân Phương, TP. Hà Nội",region:"Hà Nội",field:"Môi trường",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 1598 – ISO/IEC 17025",website:"https://boa.gov.vn",status:"active",tags:["ISO 17025","Hóa học","Môi trường"],description:"Phòng phân tích hóa và môi trường, được công nhận VILAS 1598."},
+    {id:"vilas-1599-newwide",name:"VILAS 1599 – Phòng Thí nghiệm Vật lý – QA",organization:"Công ty TNHH New Wide (Việt Nam)",address:"Lô số 45-16 đường N15, KCN Phước Đông, Phường Gia Lộc, Tỉnh Tây Ninh",region:"Miền Nam",field:"Cơ khí & Tự động hóa",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 1599 – ISO/IEC 17025",website:"https://boa.gov.vn",status:"active",tags:["ISO 17025","Vật lý","Cơ khí","QA"],description:"Phòng thí nghiệm vật lý – QA, được công nhận VILAS 1599."},
+    {id:"vilas-1600-duyen-hai",name:"VILAS 1600 – Phân xưởng Hóa",organization:"Công ty Nhiệt điện Duyên Hải",address:"Khóm Mù U, Phường Duyên Hải, Tỉnh Vĩnh Long",region:"Miền Nam",field:"Hóa học & Sinh học",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 1600 – ISO/IEC 17025",website:"https://boa.gov.vn",status:"active",tags:["ISO 17025","Hóa học","Nhiệt điện"],description:"Phân xưởng Hóa thuộc Công ty Nhiệt điện Duyên Hải, được công nhận VILAS 1600."},
+    {id:"vilas-1605-vilab",name:"Phòng thử nghiệm VILAB (VILAS 1605)",organization:"Công ty Cổ phần Kiểm định VILAB",address:"103–105 Nguyễn Đình Chiểu, TP. Hồ Chí Minh",region:"TP.HCM",field:"Hóa học & Sinh học",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 1605 – ISO/IEC 17025:2017",website:"https://vilab.vn",status:"active",established:"2025",tags:["ISO 17025","Da giày","Túi xách","Kiểm định"],description:"Phòng thử nghiệm VILAB được công nhận ISO/IEC 17025:2017 với mã VILAS 1605 (15/12/2025)."},
+    {id:"dasm-vilas-1541",name:"Phòng thí nghiệm Âm học DASM (VILAS 1541)",organization:"Viện Phát triển và Ứng dụng Vật liệu Âm thanh (DASM)",address:"Đang cập nhật",region:"Miền Bắc",field:"Vật liệu & Nano",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 1541 – ISO/IEC 17025:2017",website:"https://dasm.vn",status:"active",established:"2026",tags:["ISO 17025","Âm học","Vật liệu"],description:"Phòng thí nghiệm Âm học DASM được công nhận mở rộng lần 1 theo ISO/IEC 17025:2017."},
+    {id:"vilas-925-environment",name:"Phòng Thí nghiệm Môi trường (VILAS 925)",organization:"Đơn vị được công nhận VILAS",address:"45/1 Bùi Quang Là, Phường 12, Quận Gò Vấp, TP. Hồ Chí Minh",region:"TP.HCM",field:"Môi trường",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 925 – ISO/IEC 17025",website:"https://boa.gov.vn",status:"active",established:"2025",tags:["ISO 17025","Môi trường","Quan trắc"],description:"Phòng thí nghiệm môi trường được công nhận VILAS 925."},
+    {id:"vilas-621-environment",name:"Phòng Phân tích Môi trường (VILAS 621)",organization:"Đơn vị được công nhận VILAS",address:"Đang cập nhật",region:"Miền Bắc",field:"Môi trường",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 621 – ISO/IEC 17025:2017",website:"https://boa.gov.vn",status:"active",established:"2026",tags:["ISO 17025","Môi trường","Phân tích"],description:"Phòng phân tích môi trường, hiệu lực công nhận từ tháng 05/2026."},
+    {id:"tentamus-vietnam",name:"Tentamus Vietnam – Phòng thử nghiệm đa ngành",organization:"Tentamus Vietnam",address:"Đang cập nhật",region:"TP.HCM",field:"Nông nghiệp & Thực phẩm",type:"Phòng thử nghiệm ISO",accreditation:"ISO/IEC 17025 (BoA)",website:"https://www.tentamus.vn",status:"active",established:"2026",tags:["ISO 17025","Thực phẩm","Nông sản"],description:"Được BoA công nhận năng lực thử nghiệm đa ngành theo tiêu chuẩn ISO/IEC 17025 (12/06/2026)."},
+    {id:"ribe-vilas",name:"Phòng Thí nghiệm VILAS – Viện Nghiên cứu Công nghệ Sinh học và Môi trường (RIBE)",organization:"Trường Đại học Nông Lâm TP.HCM",address:"Khu phố 6, phường Linh Trung, TP. Thủ Đức, TP.HCM",region:"TP.HCM",field:"Nông nghiệp & Thực phẩm",type:"Phòng thử nghiệm ISO",accreditation:"VILAS – ISO/IEC 17025",website:"https://ribe.hcmuaf.edu.vn",status:"active",tags:["ISO 17025","Thực phẩm","Nông sản","Vi sinh"],description:"Kiểm tra, phân tích, thử nghiệm mẫu thực phẩm, rau quả, mật ong, đất, nước."},
+    {id:"vilas-1572-agri-food",name:"Phòng Thử nghiệm Nông sản, Thực phẩm (VILAS 1572)",organization:"Đơn vị được công nhận VILAS",address:"400/6 Ung Văn Khiêm, Phường 25, quận Bình Thạnh, TP. Hồ Chí Minh",region:"TP.HCM",field:"Nông nghiệp & Thực phẩm",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 1572 – ISO/IEC 17025",website:"https://boa.gov.vn",status:"active",tags:["ISO 17025","Nông sản","Thực phẩm"],description:"Phòng thử nghiệm nông sản, thực phẩm, hiệu lực công nhận đến 15/05/2030."},
+    {id:"vilas-1357-hungary",name:"Phòng Kiểm nghiệm Nông nghiệp Hungary (VILAS 1357)",organization:"Công ty Cổ phần Kiểm nghiệm Nông nghiệp Hungary",address:"Lô D, KCN Lễ Môn, phường Quảng Hưng, TP. Thanh Hóa, tỉnh Thanh Hóa",region:"Miền Trung",field:"Nông nghiệp & Thực phẩm",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 1357 – ISO/IEC 17025",website:"https://boa.gov.vn",status:"active",tags:["ISO 17025","Nông nghiệp","Thanh Hóa"],description:"Phòng kiểm nghiệm nông nghiệp, lĩnh vực Hóa học."},
+    {id:"vilas-004-food",name:"Phòng Thử nghiệm Thực phẩm (VILAS 004)",organization:"Đơn vị được công nhận VILAS",address:"Lô C5 Đường D1, Khu CN Cát Lái, phường Cát Lái, TP. Hồ Chí Minh",region:"TP.HCM",field:"Nông nghiệp & Thực phẩm",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 004 – ISO/IEC 17025",website:"https://boa.gov.vn",status:"active",tags:["ISO 17025","Thực phẩm"],description:"Phòng thử nghiệm thực phẩm, hiệu lực công nhận đến 08/08/2030."},
+    {id:"vilas-1234-vet",name:"PTN Trọng điểm Công nghệ Sinh học Thú y (VILAS 1234)",organization:"Học viện Nông nghiệp Việt Nam",address:"Thị trấn Trâu Quỳ, huyện Gia Lâm, Hà Nội",region:"Hà Nội",field:"Nông nghiệp & Thực phẩm",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 1234 – ISO/IEC 17025",website:"https://fstlab.vnua.edu.vn",status:"active",tags:["ISO 17025","Thú y","Công nghệ sinh học","Trọng điểm"],description:"Phòng thí nghiệm trọng điểm công nghệ sinh học thú y, 14 phép thử được công nhận."},
+    {id:"vilas-1315-fec",name:"Phòng thí nghiệm FEC (VILAS 1315)",organization:"Công ty Cổ phần Tập đoàn FEC",address:"Đang cập nhật",region:"Miền Bắc",field:"Môi trường",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 1315 – ISO/IEC 17025:2017",website:"https://fecgroup.com.vn",status:"active",established:"2025",tags:["ISO 17025","Môi trường","Mở rộng"],description:"Phòng thí nghiệm FEC được mở rộng phạm vi công nhận VILAS 1315 (04/12/2025)."},
+    {id:"vilas-524-radiation",name:"Phòng thử nghiệm VILAS 524 – Viện Công nghệ Xạ hiếm",organization:"Viện Công nghệ Xạ hiếm",address:"Đang cập nhật",region:"Miền Bắc",field:"Môi trường",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 524 – ISO/IEC 17025",website:"https://vista.gov.vn",status:"active",tags:["ISO 17025","Bức xạ","Môi trường"],description:"Phòng thử nghiệm VILAS 524, thực hiện các phép thử được công nhận phục vụ quan trắc môi trường."},
+    {id:"vilas-353-water",name:"Trung tâm Thử nghiệm Môi trường Nước (VILAS 353)",organization:"Đơn vị được công nhận VILAS",address:"Số 65 phố Vân Hồ 3, Phường Hai Bà Trưng, TP. Hà Nội",region:"Hà Nội",field:"Môi trường",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 353 – ISO/IEC 17025",website:"https://boa.gov.vn",status:"active",tags:["ISO 17025","Môi trường nước","Thử nghiệm"],description:"Trung tâm thử nghiệm môi trường nước, hiệu lực công nhận đến 11/12/2029."},
+    {id:"vilas-441-occupational",name:"Phòng Quan trắc và Phân tích Môi trường Lao động (VILAS 441)",organization:"Viện Khoa học An toàn và Vệ sinh Lao động",address:"Đang cập nhật",region:"Miền Bắc",field:"Môi trường",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 441 – ISO/IEC 17025",website:"https://wemos.vn",status:"active",tags:["ISO 17025","Môi trường lao động","Quan trắc"],description:"Phòng quan trắc và phân tích môi trường lao động, được công nhận ISO/IEC 17025."},
+    {id:"vilas-072-metrology",name:"Phòng Đo lường Hóa lý – Mẫu chuẩn (VILAS 072)",organization:"Viện Đo lường Việt Nam",address:"Đang cập nhật",region:"Hà Nội",field:"Hóa học & Sinh học",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 072 – ISO/IEC 17025",website:"https://boa.gov.vn",status:"active",tags:["ISO 17025","Đo lường","Mẫu chuẩn"],description:"Phòng đo lường hóa lý – mẫu chuẩn, lĩnh vực hiệu chuẩn và thử nghiệm."},
+    {id:"vilas-615-softlines",name:"Phòng Thử nghiệm Softlines (VILAS 615)",organization:"Công ty TNHH TÜV Rheinland Việt Nam",address:"Đang cập nhật",region:"TP.HCM",field:"Hóa học & Sinh học",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 615 – ISO/IEC 17025:2017",website:"https://www.tuv.com",status:"active",established:"2025",tags:["ISO 17025","Softlines","Dệt may"],description:"Phòng thử nghiệm Softlines, hiệu lực công nhận từ 05/2025 đến 22/05/2030."},
+    {id:"vilas-546-vpi",name:"Phòng Thí nghiệm VPI-CPSE (VILAS 546)",organization:"Trung tâm Nghiên cứu và Phát triển An toàn Dầu khí",address:"Đang cập nhật",region:"TP.HCM",field:"Hóa học & Sinh học",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 546 – ISO/IEC 17025",website:"Đang cập nhật",status:"active",tags:["ISO 17025","Dầu khí","Môi trường"],description:"Thử nghiệm hóa học và sinh học, đối tượng nước mặt, trầm tích, nước thải."},
+    {id:"imhen-environmental",name:"Phòng Thí nghiệm Môi trường – IMHEN (VILAS 1616)",organization:"Trung tâm Nghiên cứu Môi trường – Viện Khoa học Khí tượng Thủy văn và Biến đổi Khí hậu",address:"23/62 Nguyễn Chí Thanh, phường Láng, quận Đống Đa, Hà Nội",region:"Hà Nội",field:"Môi trường",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 1616 – ISO/IEC 17025:2017",website:"https://www.imh.ac.vn",status:"active",tags:["ISO 17025","Môi trường","Nước"],description:"Phân tích nước mặt, nước mưa, nước ngầm, nước thải, nước sạch."},
+    {id:"hanoi-agriculture-quality",name:"Trung tâm Phân tích và Chứng nhận Chất lượng Sản phẩm Nông nghiệp Hà Nội (VILAS 642)",organization:"Sở Nông nghiệp và Môi trường Hà Nội",address:"Tổ 44, phường Từ Liêm, Hà Nội",region:"Hà Nội",field:"Nông nghiệp & Thực phẩm",type:"Phòng thử nghiệm ISO",accreditation:"VILAS 642 – ISO/IEC 17025:2017",website:"http://trungtamphantichchungnhanhanoi.gov.vn",status:"active",tags:["ISO 17025","Nông nghiệp","Thực phẩm"],description:"Phân tích và chứng nhận chất lượng sản phẩm nông nghiệp, thực phẩm."},
+    {id:"ctu-advanced-materials",name:"PTN Vật liệu Tiên tiến (ATL)",organization:"Trường Đại học Cần Thơ",address:"Tòa nhà Công nghệ cao (ATL), Khu II, đường 3/2, phường Xuân Khánh, quận Ninh Kiều, Cần Thơ",region:"Cần Thơ",field:"Vật liệu & Nano",type:"Phòng lab nghiên cứu",accreditation:"Đang cập nhật",website:"https://www.ctu.edu.vn",status:"active",tags:["Vật liệu","Polyme","Nano"],description:"Nghiên cứu vật liệu tiên tiến, polyme, compozit, vật liệu nano và ứng dụng trong nông nghiệp, môi trường."},
+    {id:"ctu-rockwell-automation",name:"Phòng thí nghiệm Tự động hoá – Rockwell Automation Lab",organization:"Trường Đại học Cần Thơ",address:"Khu II, đường 3/2, phường Xuân Khánh, quận Ninh Kiều, Cần Thơ",region:"Cần Thơ",field:"Cơ khí & Tự động hóa",type:"Phòng lab nghiên cứu",accreditation:"Hợp tác với Rockwell Automation",website:"https://www.ctu.edu.vn",status:"active",tags:["Tự động hóa","PLC","SCADA","Doanh nghiệp"],description:"Đào tạo và nghiên cứu tự động hóa, điều khiển công nghiệp, PLC, SCADA."},
+    {id:"tr-ec",name:"Phòng thí nghiệm TR E&C",organization:"Công ty TNHH TR E&C",address:"395 đường Lê Duẩn, khu phố Tân Hạnh, phường Phú Mỹ, TP.HCM",region:"TP.HCM",field:"Cơ khí & Tự động hóa",type:"Phòng thử nghiệm ISO",accreditation:"VALAS 229 – ISO/IEC 17025",website:"Đang cập nhật",status:"active",tags:["ISO 17025","NDT","Cơ khí"],description:"Thử nghiệm không phá hủy (NDT) trong công nghiệp, kiểm tra chất lượng mối hàn, vật liệu kim loại."},
+    {id:"greenfieldcert",name:"Greenfieldcert",organization:"Công ty TNHH Chứng nhận và Giám định Cánh đồng Xanh",address:"Số 74 đường số 14, khu phố 55, KĐT mới Him Lam, phường Tân Hưng, TP.HCM",region:"TP.HCM",field:"Hóa học & Sinh học",type:"Phòng thử nghiệm ISO",accreditation:"VALAS 228 – ISO/IEC 17025",website:"Đang cập nhật",status:"active",tags:["ISO 17025","Nông sản","Thực phẩm"],description:"Thử nghiệm hóa học, phân tích chất lượng nông sản, thực phẩm, thức ăn chăn nuôi."},
+    {id:"greentech-bacninh",name:"Phòng Phân tích GreenTech",organization:"Công ty TNHH Phân tích GreenTech",address:"Tầng 3, tòa nhà HALLA, lô CC2 KCN Yên Phong, xã Yên Trung, Bắc Ninh",region:"Miền Bắc",field:"Hóa học & Sinh học",type:"Phòng thử nghiệm ISO",accreditation:"VALAS 227 – ISO/IEC 17025",website:"Đang cập nhật",status:"active",tags:["ISO 17025","Hóa học","Môi trường"],description:"Thử nghiệm hóa học, phân tích môi trường, thực phẩm và nông sản."},
+    {id:"vaat-lab",name:"VAAT-LAB",organization:"Công ty Cổ phần Giám định và Kiểm nghiệm Nông sản Việt",address:"289 đường Trần Văn Trà, KDC Hưng Phú, phường Hưng Phú, quận Cái Răng, Cần Thơ",region:"Cần Thơ",field:"Nông nghiệp & Thực phẩm",type:"Phòng thử nghiệm ISO",accreditation:"VALAS 224 – ISO/IEC 17025",website:"Đang cập nhật",status:"active",tags:["ISO 17025","Nông sản","Thủy sản"],description:"Thử nghiệm hóa học nông sản, thực phẩm, thủy sản."},
+    {id:"techlab-global",name:"Phòng Kiểm nghiệm Techlab",organization:"Công ty Cổ phần Techlab Global",address:"Km 11, quốc lộ 21, thôn 2, xã Yên Xuân, Hà Nội",region:"Hà Nội",field:"Hóa học & Sinh học",type:"Phòng thử nghiệm ISO",accreditation:"VALAS 217 – ISO/IEC 17025",website:"Đang cập nhật",status:"active",tags:["ISO 17025","Thực phẩm","Dược phẩm"],description:"Thử nghiệm hóa học và sinh học, phân tích thực phẩm, dược phẩm, mỹ phẩm và môi trường."},
+    {id:"ptv-xanh",name:"Trung tâm Kiểm nghiệm PTV Xanh",organization:"Công ty TNHH Khoa học và Công nghệ PTV Xanh",address:"Thửa đất 300+400, tờ bản đồ số 7, đường Trương Văn Diễn, phường Phước Thới, Cần Thơ",region:"Cần Thơ",field:"Hóa học & Sinh học",type:"Phòng thử nghiệm ISO",accreditation:"VALAS 215 – ISO/IEC 17025",website:"Đang cập nhật",status:"active",tags:["ISO 17025","Hóa học","Môi trường"],description:"Thử nghiệm hóa học, phân tích chất lượng sản phẩm, môi trường và nông sản."},
+    {id:"nsx-vietnam",name:"Phòng Thử nghiệm NSX VIETNAM",organization:"Công ty TNHH Kiểm soát Chất lượng Nông sản Xanh Việt Nam",address:"Tầng 2, số 405 Hà Huy Tập, phường Tân An, Đắk Lắk",region:"Miền Trung",field:"Nông nghiệp & Thực phẩm",type:"Phòng thử nghiệm ISO",accreditation:"VALAS 221 – ISO/IEC 17025",website:"Đang cập nhật",status:"active",tags:["ISO 17025","Cà phê","Hồ tiêu","Nông sản"],description:"Thử nghiệm hóa học nông sản, đặc biệt là cà phê, hồ tiêu, ca cao."},
+    {id:"mercipharm",name:"Phòng Kiểm tra Chất lượng Mercipharm",organization:"Công ty Cổ phần Dược phẩm Quốc tế Mercipharm",address:"D1A Cụm công nghiệp thực phẩm Hapro, xã Thuận An, Hà Nội",region:"Hà Nội",field:"Hóa học & Sinh học",type:"Phòng thử nghiệm ISO",accreditation:"VALAS 220 – ISO/IEC 17025",website:"Đang cập nhật",status:"active",tags:["ISO 17025","Dược phẩm","Hóa học"],description:"Kiểm tra chất lượng dược phẩm, thử nghiệm hóa học và sinh học."},
+    {id:"polyfill-yenbai",name:"Phòng Thử nghiệm Polyfill Yên Bái",organization:"Công ty Cổ phần Polyfill Yên Bái",address:"Khu công nghiệp phía Nam, phường Văn Phú, Lào Cai",region:"Miền Bắc",field:"Vật liệu & Nano",type:"Phòng thử nghiệm ISO",accreditation:"VALAS 219 – ISO/IEC 17025",website:"Đang cập nhật",status:"active",tags:["ISO 17025","Vật liệu","Polyme"],description:"Thử nghiệm cơ tính vật liệu, bột đá, polyme và các sản phẩm công nghiệp."},
+    {id:"safety-health-environment",name:"Phòng Phân tích – Viện Khoa học Kỹ thuật An toàn, Sức khỏe và Môi trường",organization:"Viện Khoa học Kỹ thuật An toàn, Sức khỏe và Môi trường",address:"No10 LK327 khu đất Cổng Đồng, phường Dương Nội, Hà Nội",region:"Hà Nội",field:"Môi trường",type:"Phòng thử nghiệm ISO",accreditation:"VALAS 218 – ISO/IEC 17025",website:"Đang cập nhật",status:"active",tags:["ISO 17025","Môi trường lao động","An toàn"],description:"Phân tích môi trường lao động, hóa học và sinh học."},
+    {id:"asia-pacific-measurement",name:"Phòng Đo lường – Công ty CP Kỹ thuật Đo lường Châu Á Thái Bình Dương",organization:"Công ty Cổ phần Kỹ thuật Đo lường Châu Á Thái Bình Dương",address:"Xóm 9, thôn Ngọc Chi, xã Vĩnh Thanh, Hà Nội",region:"Hà Nội",field:"Cơ khí & Tự động hóa",type:"Phòng thử nghiệm ISO",accreditation:"VALAS 214 – ISO/IEC 17025",website:"Đang cập nhật",status:"active",tags:["ISO 17025","Đo lường","Hiệu chuẩn"],description:"Hiệu chuẩn và đo lường thiết bị, dụng cụ đo lường trong công nghiệp."},
+    {id:"thanh-thanh-cong-soil",name:"Phòng Thử nghiệm Đất – Công ty TNHH Nghiên cứu, Ứng dụng Mía đường Thành Thành Công",organization:"Công ty TNHH Nghiên cứu, Ứng dụng Mía đường Thành Thành Công",address:"Số 99, quốc lộ 22B, ấp Bình Hòa, xã Châu Thành, Tây Ninh",region:"Miền Nam",field:"Nông nghiệp & Thực phẩm",type:"Phòng thử nghiệm ISO",accreditation:"VALAS 206 – ISO/IEC 17025",website:"Đang cập nhật",status:"active",tags:["ISO 17025","Đất nông nghiệp","Mía đường"],description:"Thử nghiệm đất nông nghiệp, phân tích dinh dưỡng đất phục vụ canh tác mía đường."}
+];
+
+/* ============================================================
+   DANH MỤC DỊCH VỤ & ĐƠN GIÁ THAM KHẢO (2025–2026)
+   Nguồn: Báo giá LAS-XD 24.141, thị trường HN/HCM, định mức TT 38/2026/TT-BXD
+   Đơn giá: VND, chưa VAT. Giá thực tế liên hệ lab.
+   ============================================================ */
+const SERVICES = [
+  // --- XI MĂNG ---
+  {id:"xm-min",group:"Xi măng",name:"Độ mịn (sàng / Blaine)",unit:"tổ mẫu",priceLow:40000,priceHigh:80000,note:"TCVN 13605, ASTM C204",tags:["Xi măng","Cơ lý"],common:true},
+  {id:"xm-tytrong",group:"Xi măng",name:"Khối lượng riêng",unit:"tổ mẫu",priceLow:50000,priceHigh:90000,note:"ASTM C188",tags:["Xi măng","Cơ lý"],common:true},
+  {id:"xm-deo",group:"Xi măng",name:"Độ dẻo tiêu chuẩn",unit:"tổ mẫu",priceLow:50000,priceHigh:100000,note:"TCVN 6017",tags:["Xi măng","Cơ lý"],common:true},
+  {id:"xm-on-dinh",group:"Xi măng",name:"Ổn định thể tích (Le Chatelier)",unit:"tổ mẫu",priceLow:50000,priceHigh:100000,note:"TCVN 6017",tags:["Xi măng","Cơ lý"],common:true},
+  {id:"xm-dong-ket",group:"Xi măng",name:"Thời gian đông kết (bắt đầu + kết thúc)",unit:"tổ mẫu",priceLow:70000,priceHigh:150000,note:"TCVN 6017, ASTM C191",tags:["Xi măng","Cơ lý"],common:true},
+  {id:"xm-cuong-do",group:"Xi măng",name:"Cường độ nén (phương pháp chuẩn 2/7/28 ngày)",unit:"tổ hợp mẫu",priceLow:90000,priceHigh:250000,note:"TCVN 6016, ASTM C109",tags:["Xi măng","Cường độ"],common:true},
+  {id:"xm-hoa",group:"Xi măng",name:"Phân tích hóa học cơ bản (SiO2, Al2O3, Fe2O3, CaO…)",unit:"mẫu",priceLow:350000,priceHigh:800000,note:"TCVN 141, ASTM C114",tags:["Xi măng","Hóa học"]},
+  {id:"xm-tron-goi",group:"Xi măng",name:"Gói thí nghiệm xi măng đầy đủ (cơ lý + cường độ)",unit:"gói",priceLow:250000,priceHigh:550000,note:"Theo yêu cầu dự án",tags:["Xi măng","Gói"],common:true},
+
+  // --- CỐT LIỆU ---
+  {id:"cl-am",group:"Cốt liệu (cát, đá)",name:"Độ ẩm",unit:"tổ mẫu",priceLow:40000,priceHigh:70000,note:"",tags:["Cốt liệu"],common:true},
+  {id:"cl-thanh-phan",group:"Cốt liệu (cát, đá)",name:"Thành phần hạt / cấp phối",unit:"tổ mẫu",priceLow:80000,priceHigh:150000,note:"TCVN 7572",tags:["Cốt liệu"],common:true},
+  {id:"cl-kltt",group:"Cốt liệu (cát, đá)",name:"Khối lượng thể tích (khô / bão hòa)",unit:"tổ mẫu",priceLow:60000,priceHigh:100000,note:"",tags:["Cốt liệu"],common:true},
+  {id:"cl-bui",group:"Cốt liệu (cát, đá)",name:"Hàm lượng bụi, bùn, sét",unit:"tổ mẫu",priceLow:50000,priceHigh:90000,note:"",tags:["Cốt liệu"],common:true},
+  {id:"cl-thoi-det",group:"Cốt liệu (cát, đá)",name:"Hàm lượng hạt thoi dẹt",unit:"tổ mẫu",priceLow:70000,priceHigh:120000,note:"",tags:["Cốt liệu"]},
+  {id:"cl-los",group:"Cốt liệu (cát, đá)",name:"Độ mài mòn Los Angeles",unit:"tổ mẫu",priceLow:180000,priceHigh:350000,note:"TCVN 7572-12",tags:["Cốt liệu","Cơ lý"],common:true},
+  {id:"cl-nen-dap",group:"Cốt liệu (cát, đá)",name:"Độ nén dập",unit:"tổ mẫu",priceLow:100000,priceHigh:200000,note:"",tags:["Cốt liệu"]},
+  {id:"cl-hut-nuoc",group:"Cốt liệu (cát, đá)",name:"Độ hút nước",unit:"tổ mẫu",priceLow:50000,priceHigh:90000,note:"",tags:["Cốt liệu"]},
+
+  // --- BÊ TÔNG & VỮA ---
+  {id:"bt-sut",group:"Bê tông & Vữa",name:"Độ sụt hỗn hợp bê tông",unit:"lần",priceLow:30000,priceHigh:60000,note:"Tại hiện trường hoặc lab",tags:["Bê tông","Hiện trường"],common:true},
+  {id:"bt-nen",group:"Bê tông & Vữa",name:"Cường độ nén mẫu 15×15×15 (tại phòng)",unit:"tổ mẫu",priceLow:70000,priceHigh:150000,note:"TCVN 3118",tags:["Bê tông","Cường độ"],common:true},
+  {id:"bt-chong-tham",group:"Bê tông & Vữa",name:"Chống thấm bê tông (B8 / B10 / B12)",unit:"tổ mẫu",priceLow:800000,priceHigh:1500000,note:"Theo cấp chống thấm",tags:["Bê tông","Chống thấm"]},
+  {id:"bt-gia-cong",group:"Bê tông & Vữa",name:"Gia công mẫu bê tông",unit:"tổ mẫu",priceLow:80000,priceHigh:150000,note:"",tags:["Bê tông"]},
+  {id:"vua-nen",group:"Bê tông & Vữa",name:"Nén / uốn mẫu vữa 4×4×16",unit:"tổ mẫu",priceLow:60000,priceHigh:120000,note:"",tags:["Vữa"],common:true},
+  {id:"tk-cpbt",group:"Bê tông & Vữa",name:"Thiết kế cấp phối bê tông (cát + đá + XM)",unit:"thiết kế",priceLow:600000,priceHigh:1500000,note:"Bao gồm thí nghiệm vật liệu đầu vào",tags:["Bê tông","Thiết kế"],common:true},
+  {id:"tk-cpv",group:"Bê tông & Vữa",name:"Thiết kế cấp phối vữa",unit:"thiết kế",priceLow:500000,priceHigh:1000000,note:"",tags:["Vữa","Thiết kế"]},
+  {id:"bt-bot-khi",group:"Bê tông & Vữa",name:"Hàm lượng bọt khí",unit:"lần",priceLow:300000,priceHigh:500000,note:"",tags:["Bê tông"]},
+
+  // --- GẠCH & ĐÁ ỐP LÁT ---
+  {id:"gach-nen",group:"Gạch & Đá ốp lát",name:"Cường độ nén gạch xây (đất sét nung / bê tông)",unit:"tổ mẫu",priceLow:70000,priceHigh:150000,note:"TCVN 1450, 6477",tags:["Gạch"],common:true},
+  {id:"gach-uon",group:"Gạch & Đá ốp lát",name:"Cường độ uốn gạch xây",unit:"tổ mẫu",priceLow:60000,priceHigh:120000,note:"",tags:["Gạch"]},
+  {id:"gach-hut",group:"Gạch & Đá ốp lát",name:"Độ hút nước gạch",unit:"tổ mẫu",priceLow:50000,priceHigh:100000,note:"",tags:["Gạch"],common:true},
+  {id:"gach-kt",group:"Gạch & Đá ốp lát",name:"Kích thước & khuyết tật ngoại quan",unit:"tổ mẫu",priceLow:40000,priceHigh:80000,note:"",tags:["Gạch"]},
+  {id:"gach-block",group:"Gạch & Đá ốp lát",name:"Cường độ nén / độ rỗng gạch block bê tông",unit:"tổ mẫu",priceLow:80000,priceHigh:180000,note:"",tags:["Gạch"]},
+  {id:"op-lat",group:"Gạch & Đá ốp lát",name:"Thí nghiệm gạch ốp lát / đá tự nhiên (uốn, hút nước, mài mòn)",unit:"tổ mẫu",priceLow:150000,priceHigh:400000,note:"TCVN 7744 / 4739",tags:["Ốp lát"]},
+
+  // --- THÉP & KIM LOẠI ---
+  {id:"thep-keo",group:"Thép & Kim loại",name:"Kéo thép tròn (cường độ chảy, bền, giãn dài)",unit:"tổ mẫu",priceLow:70000,priceHigh:150000,note:"TCVN 197, 1651",tags:["Thép"],common:true},
+  {id:"thep-uon",group:"Thép & Kim loại",name:"Uốn thép tròn",unit:"tổ mẫu",priceLow:60000,priceHigh:120000,note:"",tags:["Thép"],common:true},
+  {id:"thep-trong",group:"Thép & Kim loại",name:"Dung sai trọng lượng / chiều dài",unit:"tổ mẫu",priceLow:40000,priceHigh:80000,note:"",tags:["Thép"]},
+  {id:"thep-hoa",group:"Thép & Kim loại",name:"Thành phần hóa học thép / kim loại",unit:"mẫu",priceLow:250000,priceHigh:500000,note:"",tags:["Thép","Hóa học"]},
+  {id:"thep-gia-cong",group:"Thép & Kim loại",name:"Gia công mẫu thép hình (cắt / thắt cổ chảy)",unit:"tổ mẫu",priceLow:150000,priceHigh:350000,note:"",tags:["Thép"]},
+  {id:"ndt-han",group:"Thép & Kim loại",name:"Kiểm tra không phá hủy mối hàn (UT / RT / MT / PT)",unit:"m",priceLow:50000,priceHigh:200000,note:"Tùy phương pháp & chiều dày",tags:["NDT","Hàn"]},
+
+  // --- NHỰA ĐƯỜNG & BÊ TÔNG NHỰA ---
+  {id:"bitum",group:"Nhựa đường & BTN",name:"Thí nghiệm nhựa bitum (độ kim lún, mềm, cháy…)",unit:"mẫu",priceLow:200000,priceHigh:450000,note:"TCVN 7493",tags:["Nhựa đường"]},
+  {id:"btn",group:"Nhựa đường & BTN",name:"Thí nghiệm bê tông nhựa (Marshall, độ trống…)",unit:"tổ mẫu",priceLow:400000,priceHigh:900000,note:"",tags:["Bê tông nhựa"]},
+  {id:"bot-khoang",group:"Nhựa đường & BTN",name:"Bột khoáng cho bê tông nhựa",unit:"tổ mẫu",priceLow:150000,priceHigh:300000,note:"",tags:["Bê tông nhựa"]},
+
+  // --- HIỆN TRƯỜNG & KHÁC ---
+  {id:"ht-nen",group:"Hiện trường & Khác",name:"Thí nghiệm hiện trường (bàn nén, CBR, độ chặt…)",unit:"điểm",priceLow:200000,priceHigh:800000,note:"Tùy loại thí nghiệm & điều kiện",tags:["Hiện trường"],common:true},
+  {id:"ht-coc",group:"Hiện trường & Khác",name:"Thử tải trọng tĩnh ép dọc trục cọc",unit:"cọc",priceLow:5000000,priceHigh:25000000,note:"Theo quy mô & TCVN 9393",tags:["Hiện trường","Cọc"]},
+  {id:"dat",group:"Hiện trường & Khác",name:"Thí nghiệm đất (độ ẩm, giới hạn Atterberg, CBR lab…)",unit:"mẫu",priceLow:80000,priceHigh:350000,note:"",tags:["Đất"]},
+  {id:"chong-tham-vl",group:"Hiện trường & Khác",name:"Vật liệu chống thấm / màng / băng chặn nước",unit:"mẫu",priceLow:150000,priceHigh:500000,note:"",tags:["Chống thấm"]},
+  {id:"son",group:"Hiện trường & Khác",name:"Sơn / vecni / lớp phủ (độ bám dính, độ dày…)",unit:"mẫu",priceLow:100000,priceHigh:300000,note:"",tags:["Sơn"]},
+  {id:"ong-nhua",group:"Hiện trường & Khác",name:"Ống nhựa PVC/HDPE/PP (kích thước, áp lực…)",unit:"mẫu",priceLow:150000,priceHigh:400000,note:"",tags:["Ống nhựa"]},
+  {id:"vai-dia",group:"Hiện trường & Khác",name:"Vải địa kỹ thuật / lưới địa / màng HDPE",unit:"mẫu",priceLow:200000,priceHigh:600000,note:"",tags:["Địa kỹ thuật"]},
+
+  // --- GÓI DỊCH VỤ ---
+  {id:"goi-xm-bt",group:"Gói dịch vụ VLXD",name:"Gói kiểm tra chất lượng xi măng + cốt liệu + bê tông (cơ bản)",unit:"gói",priceLow:800000,priceHigh:2000000,note:"Phù hợp công trình dân dụng vừa",tags:["Gói","VLXD"],common:true},
+  {id:"goi-du-an",group:"Gói dịch vụ VLXD",name:"Gói thí nghiệm theo hồ sơ thiết kế / dự án (theo chỉ tiêu)",unit:"gói",priceLow:null,priceHigh:null,note:"Báo giá theo danh mục chỉ tiêu cụ thể",tags:["Gói","Dự án"]},
+  {id:"goi-hop-quy",group:"Gói dịch vụ VLXD",name:"Hỗ trợ thử nghiệm phục vụ chứng nhận hợp quy VLXD",unit:"nhóm SP",priceLow:3000000,priceHigh:15000000,note:"Chi phí thử nghiệm + đánh giá, chưa gồm phí chứng nhận",tags:["Hợp quy","Gói"]},
+
+  // ===== MÔI TRƯỜNG =====
+  {id:"mt-nuoc-ph",group:"Môi trường",name:"pH nước (mặt / thải / ngầm)",unit:"mẫu",priceLow:40000,priceHigh:80000,note:"TCVN / SMEWW",tags:["Nước","Môi trường"],common:true},
+  {id:"mt-nuoc-cod",group:"Môi trường",name:"COD / BOD5 nước thải",unit:"mẫu",priceLow:120000,priceHigh:250000,note:"",tags:["Nước","Môi trường"],common:true},
+  {id:"mt-nuoc-tss",group:"Môi trường",name:"TSS / Tổng chất rắn lơ lửng",unit:"mẫu",priceLow:80000,priceHigh:150000,note:"",tags:["Nước"]},
+  {id:"mt-nuoc-kimloai",group:"Môi trường",name:"Kim loại nặng trong nước (Pb, Cd, As, Hg… – 1 chỉ tiêu)",unit:"chỉ tiêu",priceLow:150000,priceHigh:350000,note:"AAS / ICP",tags:["Nước","Hóa học"]},
+  {id:"mt-kk-bui",group:"Môi trường",name:"Bụi tổng / PM10 / PM2.5 không khí",unit:"mẫu",priceLow:200000,priceHigh:600000,note:"Quan trắc hiện trường + phân tích",tags:["Không khí"],common:true},
+  {id:"mt-kk-khi",group:"Môi trường",name:"Khí thải / khí môi trường (SO2, NOx, CO, VOC – 1 chỉ tiêu)",unit:"chỉ tiêu",priceLow:150000,priceHigh:400000,note:"",tags:["Không khí"]},
+  {id:"mt-dat",group:"Môi trường",name:"Phân tích đất (pH, hữu cơ, kim loại nặng cơ bản)",unit:"mẫu",priceLow:250000,priceHigh:600000,note:"",tags:["Đất","Môi trường"]},
+  {id:"mt-tieng-on",group:"Môi trường",name:"Đo tiếng ồn môi trường / lao động",unit:"điểm",priceLow:50000,priceHigh:150000,note:"",tags:["Tiếng ồn"],common:true},
+  {id:"mt-lao-dong",group:"Môi trường",name:"Quan trắc môi trường lao động (gói vi khí hậu + bụi + ồn cơ bản)",unit:"vị trí",priceLow:300000,priceHigh:800000,note:"Tham khảo bảng giá quan trắc MTLĐ",tags:["Môi trường lao động"],common:true},
+  {id:"mt-goi-dtm",group:"Môi trường",name:"Gói lấy mẫu + phân tích nền phục vụ ĐTM (không khí, nước, đất)",unit:"gói",priceLow:15000000,priceHigh:80000000,note:"Tùy quy mô dự án & số điểm",tags:["ĐTM","Gói"]},
+
+  // ===== THỰC PHẨM & NÔNG SẢN =====
+  {id:"tp-protein",group:"Thực phẩm & Nông sản",name:"Protein / Nitơ tổng số",unit:"mẫu",priceLow:150000,priceHigh:300000,note:"Kjeldahl / chuẩn độ",tags:["Thực phẩm"],common:true},
+  {id:"tp-beo",group:"Thực phẩm & Nông sản",name:"Hàm lượng chất béo",unit:"mẫu",priceLow:150000,priceHigh:280000,note:"",tags:["Thực phẩm"]},
+  {id:"tp-do-am",group:"Thực phẩm & Nông sản",name:"Độ ẩm / chất khô",unit:"mẫu",priceLow:60000,priceHigh:120000,note:"",tags:["Thực phẩm"],common:true},
+  {id:"tp-kimloai",group:"Thực phẩm & Nông sản",name:"Kim loại nặng trong thực phẩm (Pb, Cd, As, Hg – 1 chỉ tiêu)",unit:"chỉ tiêu",priceLow:200000,priceHigh:450000,note:"AAS / ICP-MS",tags:["Thực phẩm","An toàn"]},
+  {id:"tp-pesticide",group:"Thực phẩm & Nông sản",name:"Dư lượng thuốc BVTV (multi-residue LC-MS/MS / GC-MS)",unit:"mẫu",priceLow:800000,priceHigh:2500000,note:"Tùy số hoạt chất",tags:["Nông sản","An toàn"],common:true},
+  {id:"tp-aflatoxin",group:"Thực phẩm & Nông sản",name:"Aflatoxin (B1, B2, G1, G2)",unit:"mẫu",priceLow:400000,priceHigh:900000,note:"HPLC-FLD",tags:["Thực phẩm","Độc tố"]},
+  {id:"tp-vi-sinh",group:"Thực phẩm & Nông sản",name:"Vi sinh cơ bản (TPC, Coliform, E.coli, Salmonella…)",unit:"chỉ tiêu",priceLow:100000,priceHigh:350000,note:"",tags:["Vi sinh","Thực phẩm"],common:true},
+  {id:"tp-goi-atvstp",group:"Thực phẩm & Nông sản",name:"Gói kiểm nghiệm ATVSTP cơ bản (hóa + vi sinh phổ biến)",unit:"gói",priceLow:800000,priceHigh:2500000,note:"Theo nhóm sản phẩm",tags:["Gói","ATVSTP"]},
+
+  // ===== Y TẾ & XÉT NGHIỆM =====
+  {id:"yt-huyet-hoc",group:"Y tế & Xét nghiệm",name:"Công thức máu / huyết học cơ bản",unit:"mẫu",priceLow:80000,priceHigh:200000,note:"ISO 15189 labs",tags:["Huyết học"],common:true},
+  {id:"yt-sinh-hoa",group:"Y tế & Xét nghiệm",name:"Sinh hóa máu cơ bản (glucose, lipid, chức năng gan/thận…)",unit:"gói",priceLow:200000,priceHigh:500000,note:"",tags:["Sinh hóa"],common:true},
+  {id:"yt-nuoc-tieu",group:"Y tế & Xét nghiệm",name:"Tổng phân tích nước tiểu",unit:"mẫu",priceLow:50000,priceHigh:120000,note:"",tags:["Nước tiểu"]},
+  {id:"yt-vi-sinh",group:"Y tế & Xét nghiệm",name:"Cấy vi sinh / kháng sinh đồ",unit:"mẫu",priceLow:150000,priceHigh:400000,note:"",tags:["Vi sinh y tế"]},
+  {id:"yt-goi-ksk",group:"Y tế & Xét nghiệm",name:"Gói khám sức khỏe định kỳ cơ bản (lab package)",unit:"gói",priceLow:300000,priceHigh:600000,note:"Tham khảo giá lab HN/HCM 2026",tags:["Gói","KSK"],common:true},
+
+  // ===== VẬT LIỆU & NANO / CƠ KHÍ =====
+  {id:"vl-co-tinh",group:"Vật liệu & Cơ khí",name:"Thử cơ tính vật liệu (kéo, nén, uốn – kim loại/polymer)",unit:"mẫu",priceLow:150000,priceHigh:500000,note:"",tags:["Cơ tính"],common:true},
+  {id:"vl-cung",group:"Vật liệu & Cơ khí",name:"Độ cứng (Rockwell / Brinell / Vickers)",unit:"điểm",priceLow:50000,priceHigh:150000,note:"",tags:["Cơ tính"]},
+  {id:"vl-ndt",group:"Vật liệu & Cơ khí",name:"NDT (UT / MT / PT / RT) – theo mét / điểm",unit:"m/điểm",priceLow:50000,priceHigh:250000,note:"Tùy phương pháp",tags:["NDT"],common:true},
+  {id:"vl-chieu-day",group:"Vật liệu & Cơ khí",name:"Đo chiều dày lớp phủ / sơn / mạ",unit:"điểm",priceLow:30000,priceHigh:100000,note:"",tags:["Lớp phủ"]},
+
+  // ===== NĂNG LƯỢNG / KHÁC =====
+  {id:"nl-pin",group:"Năng lượng & Khác",name:"Thử nghiệm pin / module (dung lượng, chu kỳ – tham khảo)",unit:"mẫu",priceLow:null,priceHigh:null,note:"Liên hệ lab chuyên sâu (EV battery, solar)",tags:["Pin","Năng lượng"]},
+  {id:"nl-hieu-chuan",group:"Năng lượng & Khác",name:"Hiệu chuẩn thiết bị đo lường cơ bản",unit:"thiết bị",priceLow:150000,priceHigh:800000,note:"Tùy loại thiết bị",tags:["Hiệu chuẩn"],common:true}
+];
+
+/* ============================================================
+   STATE & STORAGE
+   ============================================================ */
+const STORAGE_KEY='vn_labs_v7_nocoll_20261114';
+let ALL_LABS=[];
+
+function loadState(){
+    ALL_LABS=[...BASE_LABS];
+    updateStats();
+}
+function saveState(){updateStats()}
+function updateStats(){
+    const uf=[...new Set(ALL_LABS.map(l=>l.field))].sort();
+    const ur=[...new Set(ALL_LABS.map(l=>l.region))].sort();
+    const tags=[...new Set(ALL_LABS.flatMap(l=>l.tags||[]))].sort();
+    document.getElementById('headerStats').innerHTML=`<span class="stat"><strong>${ALL_LABS.length}</strong> phòng thí nghiệm</span><span class="stat"><strong>${uf.length}</strong> lĩnh vực</span><span class="stat"><strong>${ur.length}</strong> khu vực</span><span class="stat"><strong>${tags.length}</strong> nhãn</span>`;
+}
+
+/* ============================================================
+   TAB LOGIC
+   ============================================================ */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+        const id='tab-'+(btn.dataset.tab||'');
+        const panel=document.getElementById(id);
+        if(!panel)return;
+        document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+        btn.classList.add('active');
+        panel.classList.add('active');
+        if(btn.dataset.tab==='map') setTimeout(()=>{if(typeof initLabMap==='function'){if(!labMap)initLabMap();else{labMap.invalidateSize();refreshMapMarkers()}}},120);
+    });
+});
+
+/* ============================================================
+   SEARCH & FILTER
+   ============================================================ */
+const searchInput=document.getElementById('searchInput'),fieldFilter=document.getElementById('fieldFilter'),regionFilter=document.getElementById('regionFilter'),typeFilter=document.getElementById('typeFilter'),tagFilter=document.getElementById('tagFilter'),sortSelect=document.getElementById('sortSelect'),cardGrid=document.getElementById('cardGrid'),resultCount=document.getElementById('resultCount'),totalCount=document.getElementById('totalCount'),emptyState=document.getElementById('emptyState'),resetBtn=document.getElementById('resetBtn'),modalOverlay=document.getElementById('modalOverlay'),modalContent=document.getElementById('modalContent');
+
+function populateFilters(){
+    const uf=[...new Set(ALL_LABS.map(l=>l.field))].sort();
+    const ur=[...new Set(ALL_LABS.map(l=>l.region))].sort();
+    const ut=[...new Set(ALL_LABS.map(l=>l.type))].sort();
+    const tags=[...new Set(ALL_LABS.flatMap(l=>l.tags||[]))].sort();
+    fieldFilter.innerHTML='<option value="">Tất cả lĩnh vực</option>';
+    regionFilter.innerHTML='<option value="">Tất cả khu vực</option>';
+    typeFilter.innerHTML='<option value="">Tất cả loại hình</option>';
+    tagFilter.innerHTML='<option value="">Tất cả nhãn</option>';
+    uf.forEach(f=>{const o=document.createElement('option');o.value=f;o.textContent=f;fieldFilter.appendChild(o)});
+    ur.forEach(r=>{const o=document.createElement('option');o.value=r;o.textContent=r;regionFilter.appendChild(o)});
+    ut.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;typeFilter.appendChild(o)});
+    tags.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;tagFilter.appendChild(o)});
+    totalCount.textContent=ALL_LABS.length;
+}
+
+function normalize(s){return(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
+
+function getFiltered(){
+    const q=normalize(searchInput.value.trim()),f=fieldFilter.value,r=regionFilter.value,t=typeFilter.value,tag=tagFilter.value;
+    let list=ALL_LABS.filter(l=>{
+        const str=[l.name,l.organization,l.address,...(l.tags||[])].join(' ');
+        return(!q||normalize(str).includes(q))&&(!f||l.field===f)&&(!r||l.region===r)&&(!t||l.type===t)&&(!tag||(l.tags||[]).includes(tag));
+    });
+    if(sortSelect.value==='name')list.sort((a,b)=>a.name.localeCompare(b.name,'vi'));
+    else if(sortSelect.value==='name_desc')list.sort((a,b)=>b.name.localeCompare(a.name,'vi'));
+    else if(sortSelect.value==='region')list.sort((a,b)=>a.region.localeCompare(b.region,'vi'));
+    return list;
+}
+
+function typeClass(t){
+    if(t.includes('Trọng điểm quốc gia'))return'type-national';
+    if(t.includes('ĐHQG'))return'type-vnu';
+    if(t.includes('LAS'))return'type-las';
+    if(t.includes('ISO'))return'type-iso';
+    if(t.includes('xét nghiệm')||t.includes('y tế'))return'type-medical';
+    return''
+}
+function statusTag(s){if(s==='active')return'<span class="tag status-active">● Đang hoạt động</span>';if(s==='soon')return'<span class="tag status-soon">◐ Sắp vận hành</span>';return''}
+
+function renderCards(){
+    const list=getFiltered();resultCount.textContent=list.length;cardGrid.innerHTML='';
+    if(list.length===0){emptyState.style.display='block';cardGrid.style.display='none';return}
+    emptyState.style.display='none';cardGrid.style.display='grid';
+    list.forEach(lab=>{
+        const card=document.createElement('div');card.className='lab-card';card.dataset.id=lab.id;
+        const tc=typeClass(lab.type),topTags=(lab.tags||[]).slice(0,3);
+        card.innerHTML=`<span class="field-badge">${lab.field}</span><div class="tag-row"><span class="tag ${tc}">${lab.type}</span>${statusTag(lab.status)}${topTags.map(t=>`<span class="tag">${t}</span>`).join('')}</div><h3>${lab.name}</h3><div class="org">${lab.organization}</div><div class="addr"><span>📍</span><span>${lab.address}</span></div>`;
+        card.addEventListener('click',()=>showDetail(lab.id));cardGrid.appendChild(card);
+    });
+}
+
+function showDetail(id){
+    const lab=ALL_LABS.find(l=>l.id===id);if(!lab)return;
+    const acc=lab.accreditation||'';
+    const vilasM=acc.match(/VILAS\s*(\d+)/i);
+    const lasM=acc.match(/LAS[- ]?XD[ ]*([A-Z0-9.\-]+)/i);
+    let extraLinks='';
+    if(vilasM) extraLinks+=`<div class="detail-row"><span class="detail-label">Tra cứu BoA</span><span class="detail-value"><a href="https://www.boa.gov.vn/vi/search?keys=VILAS+${vilasM[1]}" target="_blank" rel="noopener">VILAS ${vilasM[1]} trên boa.gov.vn ↗</a></span></div>`;
+    if(lasM) extraLinks+=`<div class="detail-row"><span class="detail-label">Mã LAS-XD</span><span class="detail-value">LAS-XD ${lasM[1]} (đối chiếu Sở Xây dựng / cơ quan công nhận)</span></div>`;
+    const webHtml=(lab.website&&lab.website!=='Đang cập nhật')
+        ?`<a href="${lab.website.startsWith('http')?lab.website:'https://'+lab.website}" target="_blank" rel="noopener">${lab.website} ↗</a>`
+        :'Đang cập nhật';
+    modalContent.innerHTML=`<div class="modal-header"><h2>${lab.name}</h2><button class="modal-close" id="modalCloseBtn">&times;</button></div><div class="modal-body">
+        <div class="detail-row"><span class="detail-label">Tổ chức chủ quản</span><span class="detail-value">${lab.organization}</span></div>
+        <div class="detail-row"><span class="detail-label">Địa chỉ</span><span class="detail-value">${lab.address}</span></div>
+        <div class="detail-row"><span class="detail-label">Khu vực</span><span class="detail-value">${lab.region}</span></div>
+        <div class="detail-row"><span class="detail-label">Lĩnh vực</span><span class="detail-value">${lab.field}</span></div>
+        <div class="detail-row"><span class="detail-label">Loại hình</span><span class="detail-value">${lab.type}</span></div>
+        <div class="detail-row"><span class="detail-label">Công nhận</span><span class="detail-value">${acc||'Đang cập nhật'}</span></div>
+        <div class="detail-row"><span class="detail-label">Trạng thái</span><span class="detail-value">${lab.status==='active'?'● Đang hoạt động':lab.status==='soon'?'◐ Sắp vận hành':'Đang cập nhật'}</span></div>
+        ${lab.established?`<div class="detail-row"><span class="detail-label">Năm thành lập</span><span class="detail-value">${lab.established}</span></div>`:''}
+        <div class="detail-row"><span class="detail-label">Website</span><span class="detail-value">${webHtml}</span></div>
+        ${extraLinks}
+        <div class="detail-row"><span class="detail-label">Nhãn</span><span class="detail-value">${(lab.tags||[]).map(t=>`<span class="tag">${t}</span>`).join(' ')}</span></div>
+        <div class="detail-desc">${lab.description||'Đang cập nhật mô tả.'}</div>
+        <div style="margin-top:.8rem;font-size:.8rem;color:var(--muted)">Tham chiếu: <a href="https://boa.gov.vn" target="_blank" rel="noopener">BoA</a> · <a href="https://moc.gov.vn" target="_blank" rel="noopener">Bộ Xây dựng</a> · <a href="https://www.vibm.vn" target="_blank" rel="noopener">VIBM</a></div>
+    </div>`;
+    modalOverlay.classList.add('active');document.getElementById('modalCloseBtn').addEventListener('click',()=>modalOverlay.classList.remove('active'));
+}
+modalOverlay.addEventListener('click',e=>{if(e.target===modalOverlay)modalOverlay.classList.remove('active')});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')modalOverlay.classList.remove('active')});
+
+searchInput.addEventListener('input',renderCards);
+[fieldFilter,regionFilter,typeFilter,tagFilter,sortSelect].forEach(el=>el.addEventListener('change',renderCards));
+resetBtn.addEventListener('click',()=>{searchInput.value='';fieldFilter.value='';regionFilter.value='';typeFilter.value='';tagFilter.value='';sortSelect.value='name';renderCards()});
+
+/* ============================================================
+   KHỞI TẠO
+   ============================================================ */
+/* ============================================================
+   SERVICES TAB – Tra cứu dịch vụ & đơn giá
+   ============================================================ */
+function formatPrice(p){
+    if(p===null||p===undefined)return 'Liên hệ';
+    return p.toLocaleString('vi-VN')+' đ';
+}
+function populateSvcFilters(){
+    const groups=[...new Set(SERVICES.map(s=>s.group))].sort();
+    const sel=document.getElementById('svcGroupFilter');
+    if(!sel)return;
+    sel.innerHTML='<option value="">Tất cả nhóm dịch vụ</option>';
+    groups.forEach(g=>{const o=document.createElement('option');o.value=g;o.textContent=g;sel.appendChild(o)});
+    document.getElementById('svcTotal').textContent=SERVICES.length;
+}
+function getFilteredServices(){
+    const q=normalize(document.getElementById('svcSearch')?.value||'');
+    const g=document.getElementById('svcGroupFilter')?.value||'';
+    const sort=document.getElementById('svcSort')?.value||'group';
+    let list=SERVICES.filter(s=>{
+        const str=[s.name,s.group,s.note,...(s.tags||[])].join(' ');
+        return(!q||normalize(str).includes(q))&&(!g||s.group===g);
+    });
+    if(sort==='price_asc')list.sort((a,b)=>(a.priceLow||0)-(b.priceLow||0));
+    else if(sort==='price_desc')list.sort((a,b)=>(b.priceHigh||0)-(a.priceHigh||0));
+    else if(sort==='name')list.sort((a,b)=>a.name.localeCompare(b.name,'vi'));
+    else list.sort((a,b)=>a.group.localeCompare(b.group,'vi')||a.name.localeCompare(b.name,'vi'));
+    return list;
+}
+function renderServices(){
+    const list=getFilteredServices();
+    const body=document.getElementById('svcBody');
+    const empty=document.getElementById('svcEmpty');
+    const countEl=document.getElementById('svcCount');
+    if(!body)return;
+    countEl.textContent=list.length;
+    body.innerHTML='';
+    if(list.length===0){empty.style.display='block';return}
+    empty.style.display='none';
+    let lastGroup='';
+    list.forEach(s=>{
+        const tr=document.createElement('tr');
+        tr.style.borderBottom='1px solid var(--border)';
+        if(s.group!==lastGroup){tr.style.background='var(--primary-light)';lastGroup=s.group}
+        const tagsHtml=(s.tags||[]).slice(0,3).map(t=>`<span class="tag" style="font-size:.65rem">${t}</span>`).join(' ');
+        const commonBadge=s.common?'<span class="tag status-active" style="font-size:.65rem">Phổ biến</span>':'';
+        tr.innerHTML=`<td style="padding:.55rem .8rem;font-weight:600;color:var(--primary);white-space:nowrap">${s.group}</td>
+            <td style="padding:.55rem .8rem">${s.name}</td>
+            <td style="padding:.55rem .8rem;text-align:center;color:var(--muted)">${s.unit}</td>
+            <td style="padding:.55rem .8rem;text-align:right;font-weight:600">${formatPrice(s.priceLow)}</td>
+            <td style="padding:.55rem .8rem;text-align:right;font-weight:600">${formatPrice(s.priceHigh)}</td>
+            <td style="padding:.55rem .8rem;font-size:.82rem;color:var(--muted)">${s.note||'—'}</td>
+            <td style="padding:.55rem .8rem;text-align:center">${commonBadge} ${tagsHtml}</td>`;
+        body.appendChild(tr);
+    });
+}
+document.getElementById('svcSearch')?.addEventListener('input',renderServices);
+document.getElementById('svcGroupFilter')?.addEventListener('change',renderServices);
+document.getElementById('svcSort')?.addEventListener('change',renderServices);
+document.getElementById('svcResetBtn')?.addEventListener('click',()=>{
+    document.getElementById('svcSearch').value='';
+    document.getElementById('svcGroupFilter').value='';
+    document.getElementById('svcSort').value='group';
+    renderServices();
+});
+
+/* ============================================================
+   TOTAL LAB – Bản đồ · Yêu cầu · Báo giá · Quy trình · Kết quả
+   ============================================================ */
+const REQ_KEY='total_lab_requests_v1';
+let quoteItems=[],selectedLab=null;
+let labMap=null,mapMarkers=[],userLatLng=null,routeLayer=null,routeEndMarker=null;
+
+// Tọa độ trung tâm ước lượng theo region (WGS84)
+const REGION_COORDS={
+  'Hà Nội':[21.0285,105.8542],
+  'TP.HCM':[10.8231,106.6297],
+  'Đà Nẵng':[16.0544,108.2022],
+  'Cần Thơ':[10.0452,105.7469],
+  'Miền Bắc':[21.3,105.8],
+  'Miền Trung':[16.0,108.1],
+  'Miền Nam':[10.5,106.4]
+};
+function hashStr(s){let h=0;for(let i=0;i<s.length;i++)h=((h<<5)-h)+s.charCodeAt(i)|0;return Math.abs(h)}
+function labLatLng(lab){
+  const base=REGION_COORDS[lab.region]||REGION_COORDS['Hà Nội'];
+  const h=hashStr(lab.id||lab.name||'');
+  // jitter ~±0.12° (~10–13 km) để marker không chồng hoàn toàn
+  const dLat=((h%100)-50)/400;
+  const dLng=(((h>>7)%100)-50)/400;
+  return [base[0]+dLat,base[1]+dLng];
+}
+function haversineKm(a,b){
+  const R=6371,toR=Math.PI/180;
+  const dLat=(b[0]-a[0])*toR,dLng=(b[1]-a[1])*toR;
+  const x=Math.sin(dLat/2)**2+Math.cos(a[0]*toR)*Math.cos(b[0]*toR)*Math.sin(dLng/2)**2;
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+function clearRoute(){
+  if(labMap&&routeLayer){labMap.removeLayer(routeLayer);routeLayer=null}
+  if(labMap&&routeEndMarker){labMap.removeLayer(routeEndMarker);routeEndMarker=null}
+  const info=document.getElementById('mapRouteInfo');
+  if(info) info.innerHTML='';
+}
+async function drawRouteToLab(labId){
+  if(!labMap){initLabMap();await new Promise(r=>setTimeout(r,300))}
+  const lab=ALL_LABS.find(l=>l.id===labId);
+  if(!lab){alert('Không tìm thấy lab');return}
+  const from=getUserLatLng();
+  const to=labLatLng(lab);
+  clearRoute();
+  const info=document.getElementById('mapRouteInfo');
+  if(info) info.innerHTML='<span style="color:var(--muted)">Đang tính đường đi (OSRM)…</span>';
+  // OSRM public demo: lon,lat order
+  const url=`https://router.project-osrm.org/route/v1/driving/${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson`;
+  try{
+    const res=await fetch(url);
+    const data=await res.json();
+    if(data.code!=='Ok'||!data.routes||!data.routes[0]){
+      // fallback: đường thẳng
+      routeLayer=L.polyline([from,to],{color:'#c0392b',weight:4,dashArray:'8 10',opacity:0.85}).addTo(labMap);
+      labMap.fitBounds(L.latLngBounds([from,to]).pad(0.2));
+      if(info) info.innerHTML=`<strong>Đường thẳng (không có tuyến OSRM)</strong> · ~${haversineKm(from,to).toFixed(1)} km tới <em>${lab.name}</em>
+        <button class="btn btn-outline" style="padding:.2rem .5rem;font-size:.75rem;margin-left:.4rem;" onclick="clearRoute()">Xóa đường</button>`;
+      return;
+    }
+    const route=data.routes[0];
+    const coords=route.geometry.coordinates.map(c=>[c[1],c[0]]); // geojson lon,lat -> lat,lng
+    routeLayer=L.polyline(coords,{color:'#0b5e8a',weight:5,opacity:0.9}).addTo(labMap);
+    routeEndMarker=L.circleMarker(to,{radius:10,color:'#c0392b',fillColor:'#e74c3c',fillOpacity:1,weight:2}).addTo(labMap)
+      .bindPopup(`<strong>Đích: ${lab.name}</strong>`).openPopup();
+    labMap.fitBounds(routeLayer.getBounds().pad(0.15));
+    const km=(route.distance/1000).toFixed(1);
+    const min=Math.round(route.duration/60);
+    if(info) info.innerHTML=`<strong>Tuyến đường (OSRM)</strong> · <span class="dist-badge">${km} km</span> · ~${min} phút lái xe
+      · tới <em>${lab.name}</em>
+      <button class="btn btn-outline" style="padding:.2rem .5rem;font-size:.75rem;margin-left:.4rem;" onclick="clearRoute()">Xóa đường</button>
+      <button class="btn btn-primary" style="padding:.2rem .5rem;font-size:.75rem;margin-left:.3rem;" onclick="pickLab('${lab.id}')">Chọn lab → Báo giá</button>`;
+  }catch(e){
+    routeLayer=L.polyline([from,to],{color:'#c0392b',weight:4,dashArray:'8 10',opacity:0.85}).addTo(labMap);
+    labMap.fitBounds(L.latLngBounds([from,to]).pad(0.2));
+    if(info) info.innerHTML=`Không gọi được OSRM (${e.message}). Hiển thị <strong>đường thẳng</strong> ~${haversineKm(from,to).toFixed(1)} km.
+      <button class="btn btn-outline" style="padding:.2rem .5rem;font-size:.75rem;margin-left:.4rem;" onclick="clearRoute()">Xóa đường</button>`;
+  }
+}
+window.drawRouteToLab=drawRouteToLab;
+window.clearRoute=clearRoute;
+function getUserLatLng(){
+  if(userLatLng) return userLatLng;
+  const r=document.getElementById('mapUserRegion')?.value||'Hà Nội';
+  return REGION_COORDS[r]||REGION_COORDS['Hà Nội'];
+}
+function labsWithDistance(fieldFilter){
+  const u=getUserLatLng();
+  let list=ALL_LABS.filter(l=>l.status!=='soon');
+  if(fieldFilter) list=list.filter(l=>l.field===fieldFilter);
+  return list.map(l=>{
+    const ll=labLatLng(l);
+    return {lab:l,ll,km:haversineKm(u,ll)};
+  }).sort((a,b)=>a.km-b.km);
+}
+function initLabMap(){
+  if(typeof L==='undefined'){
+    document.getElementById('labMap').innerHTML='<p style="padding:1rem;color:var(--danger)">Không tải được Leaflet (cần kết nối mạng để dùng bản đồ OSM).</p>';
+    return;
+  }
+  if(labMap){labMap.remove();labMap=null;mapMarkers=[]}
+  const u=getUserLatLng();
+  labMap=L.map('labMap').setView(u,6);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:18,attribution:'&copy; OpenStreetMap'
+  }).addTo(labMap);
+  L.marker(u,{title:'Vị trí của bạn'}).addTo(labMap)
+    .bindPopup('<strong>Vị trí tham chiếu của bạn</strong>').openPopup();
+  refreshMapMarkers();
+  setTimeout(()=>labMap.invalidateSize(),200);
+}
+function refreshMapMarkers(){
+  if(!labMap)return;
+  clearRoute();
+  mapMarkers.forEach(m=>labMap.removeLayer(m));
+  mapMarkers=[];
+  const field=document.getElementById('mapFieldFilter')?.value||'';
+  const ranked=labsWithDistance(field);
+  const u=getUserLatLng();
+  document.getElementById('mapUserCoord').textContent=
+    `Tọa độ tham chiếu: ${u[0].toFixed(4)}, ${u[1].toFixed(4)}`+(userLatLng?' (GPS)':' (theo tỉnh/thành)');
+  ranked.slice(0,80).forEach((item,idx)=>{
+    const {lab,ll,km}=item;
+    const m=L.circleMarker(ll,{
+      radius:idx<5?9:6,
+      color:idx<5?'#c0392b':'#0b5e8a',
+      fillColor:idx<5?'#e74c3c':'#1b9aaa',
+      fillOpacity:0.85,weight:1.5
+    }).addTo(labMap);
+    m.bindPopup(`<strong>${lab.name}</strong><br>${lab.region} · ${lab.field}<br>
+      <span class="dist-badge">~${km<10?km.toFixed(1):Math.round(km)} km</span><br>
+      <small>${lab.accreditation||''}</small><br>
+      <button onclick="drawRouteToLab('${lab.id}')" style="margin-top:4px;cursor:pointer;margin-right:4px;">🚗 Chỉ đường</button>
+      <button onclick="pickLab('${lab.id}')" style="margin-top:4px;cursor:pointer;">Chọn → Báo giá</button>`);
+    mapMarkers.push(m);
+  });
+  // Near list
+  const nearEl=document.getElementById('mapNearList');
+  if(nearEl){
+    nearEl.innerHTML=ranked.slice(0,12).map((item,i)=>`
+      <div style="display:flex;justify-content:space-between;gap:.5rem;padding:.45rem 0;border-bottom:1px solid var(--border);align-items:center;flex-wrap:wrap;">
+        <div><strong>${i+1}. ${item.lab.name}</strong><div style="font-size:.78rem;color:var(--muted)">${item.lab.region} · ${item.lab.field}</div></div>
+        <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap;">
+          <span class="dist-badge">~${item.km<10?item.km.toFixed(1):Math.round(item.km)} km</span>
+          <button class="btn btn-outline" style="padding:.25rem .55rem;font-size:.75rem;" onclick="drawRouteToLab('${item.lab.id}')">🚗 Chỉ đường</button>
+          <button class="btn btn-primary" style="padding:.25rem .55rem;font-size:.75rem;" onclick="pickLab('${item.lab.id}')">Chọn</button>
+        </div>
+      </div>`).join('')||'<span style="color:var(--muted)">Không có lab phù hợp bộ lọc.</span>';
+  }
+}
+function populateMapFieldFilter(){
+  const sel=document.getElementById('mapFieldFilter');
+  if(!sel)return;
+  const fields=[...new Set(ALL_LABS.map(l=>l.field))].sort();
+  sel.innerHTML='<option value="">Tất cả lĩnh vực</option>'+fields.map(f=>`<option value="${f}">${f}</option>`).join('');
+}
+document.getElementById('mapRefreshBtn')?.addEventListener('click',()=>{
+  userLatLng=null;
+  if(labMap) refreshMapMarkers(); else initLabMap();
+});
+document.getElementById('mapUserRegion')?.addEventListener('change',()=>{
+  userLatLng=null;
+  if(labMap){labMap.setView(getUserLatLng(),7);refreshMapMarkers()}
+});
+document.getElementById('mapFieldFilter')?.addEventListener('change',()=>{if(labMap)refreshMapMarkers()});
+document.getElementById('mapGpsBtn')?.addEventListener('click',()=>{
+  if(!navigator.geolocation){alert('Trình duyệt không hỗ trợ GPS');return}
+  navigator.geolocation.getCurrentPosition(pos=>{
+    userLatLng=[pos.coords.latitude,pos.coords.longitude];
+    if(labMap){labMap.setView(userLatLng,10);refreshMapMarkers()}
+    else initLabMap();
+  },err=>alert('Không lấy được GPS: '+err.message),{enableHighAccuracy:true,timeout:10000});
+});
+// Init map when tab opened
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    if(btn.dataset.tab==='map') setTimeout(()=>{if(!labMap)initLabMap();else{labMap.invalidateSize();refreshMapMarkers()}},100);
+  });
+});
+
+const PROCESS_MAP={
+  'Xi măng':['1. Tiếp nhận yêu cầu & xác nhận chỉ tiêu','2. Lấy / nhận mẫu xi măng (theo TCVN)','3. Chuẩn bị mẫu & đăng ký lab','4. Thí nghiệm cơ lý / hóa theo chỉ tiêu','5. Kiểm soát chất lượng nội bộ (QC)','6. Lập phiếu kết quả & ký duyệt','7. Trả kết quả + lưu hồ sơ'],
+  'Cốt liệu (cát, đá)':['1. Tiếp nhận & phân loại mẫu','2. Chuẩn bị / sấy / sàng mẫu','3. Thí nghiệm (thành phần hạt, LA, hút nước…)','4. QC & đối chiếu tiêu chuẩn','5. Phát hành kết quả'],
+  'Bê tông & Vữa':['1. Tiếp nhận yêu cầu (hiện trường / lab)','2. Lấy mẫu hoặc nhận mẫu đúc sẵn','3. Bảo dưỡng mẫu (nếu cần)','4. Thí nghiệm nén / sụt / chống thấm…','5. Tính toán & phiếu kết quả','6. Trả kết quả cho chủ đầu tư / nhà thầu'],
+  'Môi trường':['1. Khảo sát điểm lấy mẫu','2. Lấy mẫu hiện trường (nước / khí / đất / ồn)','3. Bảo quản & vận chuyển về lab','4. Phân tích theo phương pháp công nhận','5. Báo cáo quan trắc / kết quả','6. Lưu hồ sơ theo quy định'],
+  'Thực phẩm & Nông sản':['1. Tiếp nhận mẫu & chuỗi bảo quản','2. Đăng ký chỉ tiêu (hóa / vi sinh)','3. Phân tích theo ISO/TCVN','4. Kiểm soát chất lượng','5. Phát hành phiếu kết quả ATVSTP'],
+  'Y tế & Xét nghiệm':['1. Đăng ký / lấy mẫu bệnh phẩm','2. Tiền phân tích (định danh, bảo quản)','3. Phân tích theo ISO 15189','4. Thẩm định & trả kết quả lâm sàng','5. Tư vấn / tái xét nếu cần'],
+  'default':['1. Tiếp nhận yêu cầu TOTAL LAB','2. Gợi ý & chọn lab phù hợp','3. Báo giá & xác nhận','4. Lấy/nhận mẫu','5. Thực hiện thí nghiệm','6. QC & phát hành kết quả','7. Lưu trữ & hỗ trợ tra cứu']
+};
+
+function genReqCode(){
+  const d=new Date();
+  const ds=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+  return 'TL-'+ds+'-'+Math.random().toString(36).substring(2,6).toUpperCase();
+}
+function saveReq(obj){
+  let arr=[];try{arr=JSON.parse(localStorage.getItem(REQ_KEY)||'[]')}catch(e){}
+  arr.unshift(obj);if(arr.length>30)arr=arr.slice(0,30);
+  localStorage.setItem(REQ_KEY,JSON.stringify(arr));
+}
+function loadReqs(){try{return JSON.parse(localStorage.getItem(REQ_KEY)||'[]')}catch(e){return[]}}
+
+function matchLabs(region,field,priority){
+  let list=ALL_LABS.filter(l=>l.status!=='soon');
+  if(field) list=list.filter(l=>l.field===field||(l.tags||[]).some(t=>normalize(t).includes(normalize(field).split(' ')[0])));
+  if(priority==='iso') list=list.filter(l=>(l.accreditation||'').match(/VILAS|ISO/i)||(l.type||'').match(/ISO|VILAS/i));
+  if(priority==='fast') list=list.filter(l=>l.status==='active');
+  // Khoảng cách ước lượng từ region người dùng
+  const ureg=region||'Hà Nội';
+  const u=REGION_COORDS[ureg]||REGION_COORDS['Hà Nội'];
+  list=list.map(l=>{
+    const ll=labLatLng(l);
+    return {lab:l,km:haversineKm(u,ll)};
+  });
+  if(priority==='near'||!priority){
+    list.sort((a,b)=>a.km-b.km||((/VILAS|ISO/i.test(b.lab.accreditation||'')?1:0)-(/VILAS|ISO/i.test(a.lab.accreditation||'')?1:0)));
+  } else {
+    list.sort((a,b)=>{
+      const sa=(a.lab.region===region?2:0)+(/VILAS|ISO/i.test(a.lab.accreditation||'')?1:0);
+      const sb=(b.lab.region===region?2:0)+(/VILAS|ISO/i.test(b.lab.accreditation||'')?1:0);
+      return sb-sa||a.km-b.km;
+    });
+  }
+  return list.slice(0,8).map(x=>{x.lab._distKm=x.km;return x.lab});
+}
+
+document.getElementById('reqSubmitBtn')?.addEventListener('click',()=>{
+  if(!requireAuth('gửi yêu cầu thí nghiệm'))return;
+  const name=document.getElementById('reqName').value.trim();
+  const contact=document.getElementById('reqContact').value.trim();
+  const region=document.getElementById('reqRegion').value;
+  const field=document.getElementById('reqField').value;
+  const desc=document.getElementById('reqDesc').value.trim();
+  const priority=(document.querySelector('input[name="reqPriority"]:checked')||{}).value||'near';
+  if(!name||!contact||!region||!field){alert('Vui lòng điền đủ Họ tên, Liên hệ, Khu vực và Lĩnh vực.');return}
+  const matched=matchLabs(region,field,priority);
+  const code=genReqCode();
+  const req={code,name,contact,region,field,desc,priority,time:new Date().toISOString(),labs:matched.map(l=>l.id),userEmail:currentUser?.email||null,userName:currentUser?.name||null};
+  saveReq(req);
+  const box=document.getElementById('reqMatchResult');
+  box.style.display='block';
+  if(!matched.length){
+    box.innerHTML=`<div class="empty-state"><h3>Chưa tìm thấy lab phù hợp</h3><p>Mã yêu cầu: <strong>${code}</strong>. Thử đổi khu vực/lĩnh vực hoặc tra cứu Lab thủ công.</p></div>`;
+    return;
+  }
+  selectedLab=matched[0];
+  box.innerHTML=`<div style="background:var(--primary-light);padding:1rem;border-radius:12px;">
+    <p><strong>Mã yêu cầu:</strong> <code style="background:#fff;padding:.2rem .5rem;border-radius:4px;">${code}</code> · Đã lưu trên trình duyệt</p>
+    <p style="margin:.5rem 0;">Gợi ý <strong>${matched.length}</strong> lab (ưu tiên: ${priority==='near'?'Gần nhất (ước lượng km)':priority==='fast'?'Nhanh':priority==='iso'?'ISO/VILAS':'Giá'}):</p>
+    <div class="card-grid" style="margin-top:.6rem;">${matched.map((l,i)=>`
+      <div class="lab-card" style="cursor:pointer;${i===0?'border:2px solid var(--accent);':''}" data-pick="${l.id}">
+        <span class="field-badge">${l.field}</span>
+        <div class="tag-row"><span class="tag ${typeClass(l.type)}">${l.type}</span>${statusTag(l.status)}
+          ${l._distKm!=null?`<span class="dist-badge">~${l._distKm<10?l._distKm.toFixed(1):Math.round(l._distKm)} km</span>`:''}</div>
+        <h3>${i===0?'⭐ ':''}${l.name}</h3>
+        <div class="org">${l.organization}</div>
+        <div class="addr"><span>📍</span><span>${l.address}</span></div>
+        <div style="margin-top:.4rem;font-size:.78rem;"><button class="btn btn-primary" style="padding:.35rem .7rem;font-size:.78rem;" onclick="pickLab('${l.id}')">Chọn lab này → Báo giá</button></div>
+      </div>`).join('')}</div>
+  </div>`;
+  renderRecentReqs();
+});
+document.getElementById('reqClearBtn')?.addEventListener('click',()=>{
+  ['reqName','reqContact','reqDesc'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('reqRegion').value='';document.getElementById('reqField').value='';
+  document.getElementById('reqMatchResult').style.display='none';
+});
+window.pickLab=function(id){
+  selectedLab=ALL_LABS.find(l=>l.id===id)||null;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.querySelector('[data-tab="quote"]').classList.add('active');
+  document.getElementById('tab-quote').classList.add('active');
+  updateQuoteLabInfo();
+};
+
+function updateQuoteLabInfo(){
+  const el=document.getElementById('quoteLabInfo');
+  if(!el)return;
+  if(selectedLab) el.innerHTML=`Lab đã chọn: <strong>${selectedLab.name}</strong> · ${selectedLab.region} · ${selectedLab.accreditation||''} · <a href="#" onclick="showDetail('${selectedLab.id}');return false;">Chi tiết</a>`;
+  else el.innerHTML='Chưa chọn lab — có thể chọn từ tab <strong>Gửi yêu cầu</strong> hoặc tra cứu Lab.';
+}
+function populateQuoteSelects(){
+  const groups=[...new Set(SERVICES.map(s=>s.group))].sort();
+  const gsel=document.getElementById('quoteGroup');
+  const ssel=document.getElementById('quoteSvc');
+  if(!gsel||!ssel)return;
+  gsel.innerHTML='<option value="">Tất cả nhóm</option>'+groups.map(g=>`<option value="${g}">${g}</option>`).join('');
+  function fillSvc(){
+    const g=gsel.value;
+    const list=g?SERVICES.filter(s=>s.group===g):SERVICES;
+    ssel.innerHTML='<option value="">-- Chọn dịch vụ --</option>'+list.map(s=>`<option value="${s.id}">${s.name} (${s.unit})</option>`).join('');
+  }
+  gsel.onchange=fillSvc;fillSvc();
+}
+function renderQuoteTable(){
+  const body=document.getElementById('quoteBody');
+  if(!body)return;
+  body.innerHTML='';
+  let low=0,high=0;
+  quoteItems.forEach((it,idx)=>{
+    const s=SERVICES.find(x=>x.id===it.id);
+    if(!s)return;
+    const pl=(s.priceLow||0)*it.qty, ph=(s.priceHigh||s.priceLow||0)*it.qty;
+    low+=pl;high+=ph;
+    const tr=document.createElement('tr');
+    tr.style.borderBottom='1px solid var(--border)';
+    tr.innerHTML=`<td style="padding:.5rem;">${s.name}<div style="font-size:.75rem;color:var(--muted)">${s.group}</div></td>
+      <td style="padding:.5rem;text-align:center;">${it.qty}</td>
+      <td style="padding:.5rem;text-align:right;">${formatPrice(s.priceLow)}</td>
+      <td style="padding:.5rem;text-align:right;">${formatPrice(s.priceHigh)}</td>
+      <td style="padding:.5rem;text-align:right;font-weight:600;">${s.priceLow!=null?formatPrice(pl)+' – '+formatPrice(ph):'Liên hệ'}</td>
+      <td style="padding:.5rem;"><button class="btn btn-danger" style="padding:.25rem .5rem;font-size:.75rem;" data-rm="${idx}">Xóa</button></td>`;
+    body.appendChild(tr);
+  });
+  body.querySelectorAll('[data-rm]').forEach(btn=>btn.onclick=()=>{quoteItems.splice(+btn.dataset.rm,1);renderQuoteTable()});
+  document.getElementById('quoteSumLow').textContent=formatPrice(low);
+  document.getElementById('quoteSumHigh').textContent=formatPrice(high);
+  document.getElementById('quoteSumRange').textContent=low||high?(formatPrice(low)+' – '+formatPrice(high)):'—';
+}
+document.getElementById('quoteAddBtn')?.addEventListener('click',()=>{
+  const id=document.getElementById('quoteSvc').value;
+  const qty=Math.max(1,parseInt(document.getElementById('quoteQty').value,10)||1);
+  if(!id){alert('Chọn dịch vụ');return}
+  const exist=quoteItems.find(x=>x.id===id);
+  if(exist) exist.qty+=qty; else quoteItems.push({id,qty});
+  renderQuoteTable();
+});
+document.getElementById('quoteClearBtn')?.addEventListener('click',()=>{quoteItems=[];renderQuoteTable()});
+document.getElementById('quoteSaveBtn')?.addEventListener('click',()=>{
+  if(!requireAuth('lưu báo giá'))return;
+  if(!quoteItems.length){alert('Chưa có dòng báo giá');return}
+  const code=genReqCode();
+  const obj={code,type:'quote',lab:selectedLab?selectedLab.id:null,items:quoteItems.slice(),time:new Date().toISOString(),userEmail:currentUser?.email||null,userName:currentUser?.name||null};
+  saveReq(obj);
+  alert('Đã lưu báo giá mã: '+code);
+  renderRecentReqs();
+});
+document.getElementById('quotePrintBtn')?.addEventListener('click',()=>window.print());
+
+function initProcess(){
+  const sel=document.getElementById('processGroup');
+  if(!sel)return;
+  const keys=Object.keys(PROCESS_MAP).filter(k=>k!=='default');
+  sel.innerHTML=keys.map(k=>`<option value="${k}">${k}</option>`).join('')+'<option value="default">Quy trình chung TOTAL LAB</option>';
+  function draw(){
+    const steps=PROCESS_MAP[sel.value]||PROCESS_MAP.default;
+    document.getElementById('processSteps').innerHTML=steps.map((s,i)=>`
+      <div style="display:flex;gap:.8rem;align-items:flex-start;padding:.7rem 0;border-bottom:1px dashed var(--border);">
+        <div style="width:28px;height:28px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0;">${i+1}</div>
+        <div style="font-size:.92rem;padding-top:.2rem;">${s.replace(/^\d+\.\s*/,'')}</div>
+      </div>`).join('');
+  }
+  sel.onchange=draw;draw();
+}
+
+function renderRecentReqs(){
+  const el=document.getElementById('recentReqs');
+  if(!el)return;
+  const arr=loadReqs();
+  if(!arr.length){el.innerHTML='<span style="color:var(--muted)">Chưa có yêu cầu nào trên máy này.</span>';return}
+  el.innerHTML=arr.slice(0,10).map(r=>`
+    <div style="padding:.5rem 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;flex-wrap:wrap;gap:.4rem;">
+      <span><code>${r.code}</code> · ${r.type==='quote'?'Báo giá':(r.field||'')} · ${r.region||''}</span>
+      <span style="color:var(--muted);font-size:.8rem;">${new Date(r.time).toLocaleString('vi-VN')}</span>
+    </div>`).join('');
+}
+document.getElementById('resultSearchBtn')?.addEventListener('click',()=>{
+  const code=(document.getElementById('resultCode').value||'').trim().toUpperCase();
+  const arr=loadReqs();
+  const found=arr.find(r=>(r.code||'').toUpperCase()===code);
+  const out=document.getElementById('resultOut');
+  if(!found){out.innerHTML='<div class="empty-state"><h3>Không tìm thấy</h3><p>Mã chỉ tồn tại trên trình duyệt đã tạo yêu cầu.</p></div>';return}
+  const lab=found.lab?ALL_LABS.find(l=>l.id===found.lab):null;
+  out.innerHTML=`<div style="background:var(--card);padding:1rem;border-radius:12px;box-shadow:var(--shadow);">
+    <p><strong>Mã:</strong> ${found.code}</p>
+    <p><strong>Loại:</strong> ${found.type==='quote'?'Báo giá tự động':'Yêu cầu thí nghiệm'}</p>
+    <p><strong>Thời gian:</strong> ${new Date(found.time).toLocaleString('vi-VN')}</p>
+    ${found.name?`<p><strong>Khách hàng:</strong> ${found.name} · ${found.contact||''}</p>`:''}
+    ${found.field?`<p><strong>Lĩnh vực:</strong> ${found.field} · ${found.region||''}</p>`:''}
+    ${found.desc?`<p><strong>Mô tả:</strong> ${found.desc}</p>`:''}
+    ${lab?`<p><strong>Lab:</strong> ${lab.name}</p>`:''}
+    ${found.items?`<p><strong>Số dòng báo giá:</strong> ${found.items.length}</p>`:''}
+    <p style="margin-top:.6rem;color:var(--success);font-weight:600;">Trạng thái demo: Đã ghi nhận · Chờ lab xác nhận</p>
+  </div>`;
+});
+
+// Init TOTAL LAB UI parts
+initAuthUI();
+populateQuoteSelects();
+initProcess();
+renderRecentReqs();
+updateQuoteLabInfo();
+populateMapFieldFilter();
+
+loadState();populateFilters();renderCards();
+populateSvcFilters();renderServices();
+console.log('TOTAL LAB ready · '+APP_VERSION+' · '+ALL_LABS.length+' labs · '+SERVICES.length+' services');
+window.addEventListener('resize',function(){if(typeof labMap!=='undefined'&&labMap)setTimeout(function(){labMap.invalidateSize()},200)});
+window.addEventListener('orientationchange',function(){if(typeof labMap!=='undefined'&&labMap)setTimeout(function(){labMap.invalidateSize()},400)});
+</script>
+</body>
+</html>
